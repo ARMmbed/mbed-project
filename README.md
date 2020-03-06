@@ -13,7 +13,15 @@
 
 ## Overview
 
-TODO_OVERVIEW
+**This package supports the creation and management of Mbed OS projects using .**
+
+Common actions supported by this tooling are
+- Creation of a new Mbed OS applications.
+- Cloning of an existing Mbed OS project.
+- Checkout of a specific version of Mbed OS or library.
+
+It is expected that this package will be used by developers of Mbed OS tooling rather than by users of Mbed OS. For
+a command line interface for Mbed OS please see the package [mbed-tools](https://github.com/ARMmbed/mbed-tools).
 
 ## Releases
 
