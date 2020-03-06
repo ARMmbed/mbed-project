@@ -1,0 +1,3 @@
+graft mbed_project
+global-exclude *.py[cod] __pycache__ *.so
+global-include *.spdx
