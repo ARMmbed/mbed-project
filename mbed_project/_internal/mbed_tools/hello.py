@@ -2,11 +2,11 @@
 # Copyright (C) 2020 Arm Mbed. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-"""Entry point for mbed-tools cli."""
+"""Hello command."""
 import click
 
 
 @click.command()
-def cli():
+def hello():
     """Prints Hello."""
     click.echo("Hello.")
