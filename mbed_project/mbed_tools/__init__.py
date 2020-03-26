@@ -3,6 +3,4 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 """Integration with https://github.com/ARMmbed/mbed-tools."""
-from mbed_project._internal.mbed_tools.hello import hello
-
-cli = hello
+from mbed_project.mbed_tools.cli import init, clone, checkout, libs
