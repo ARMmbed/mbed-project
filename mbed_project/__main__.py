@@ -3,6 +3,18 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 """Entrypoint for development purposes."""
-from mbed_project.mbed_tools import cli
+import click
 
-cli()
+from mbed_project.mbed_tools import init, checkout, libs, clone
+
+
+@click.group()
+def group() -> None:
+    pass
+
+
+group.add_command(init)
+group.add_command(clone)
+group.add_command(libs)
+group.add_command(checkout)
+group()
