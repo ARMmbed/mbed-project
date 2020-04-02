@@ -95,9 +95,10 @@ class MbedProgram:
         Raises:
             ProgramNotFound: An existing program was not found in the path.
         """
-        program = _find_program_root(dir_path)
-        logger.info(f"Found existing Mbed program at path '{program.mbed_file.parent}'")
-        repo = git.Repo(str(program.mbed_file.parent))
+        program_root = _find_program_root(dir_path)
+        logger.info(f"Found existing Mbed program at path '{program_root}'")
+        repo = git.Repo(str(program_root))
+        program = MbedProgramData.from_existing(program_root)
         return cls(repo, program)
 
 
@@ -118,7 +119,7 @@ def _tree_contains_program(path: Path) -> bool:
         return False
 
 
-def _find_program_root(cwd: Path) -> MbedProgramData:
+def _find_program_root(cwd: Path) -> Path:
     """Walk up the directory tree, looking for a .mbed file.
 
     Programs contain a .mbed file at the root of the source tree.
@@ -127,15 +128,14 @@ def _find_program_root(cwd: Path) -> MbedProgramData:
         cwd: The directory path to search for a program.
 
     Returns:
-        `MbedProgramData` for the path containing the .mbed file.
+        Path containing the .mbed file.
     """
     potential_root = cwd.resolve()
     while str(potential_root) != str(potential_root.root):
         logging.debug(f"Searching for .mbed file at path {potential_root}")
-        try:
-            return MbedProgramData.from_existing(potential_root)
-        except ValueError:
-            potential_root = potential_root.parent
+        if (potential_root / ".mbed").exists():
+            return potential_root
+        potential_root = potential_root.parent
 
     raise ProgramNotFound(
         f"No program found from {cwd.resolve()} to {cwd.resolve().root}. Please set the cwd to a program directory or "

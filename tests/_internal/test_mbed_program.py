@@ -94,24 +94,24 @@ class TestInitialiseProgram(TestCase):
 class TestFindProgramRoot(TestCase):
     @patchfs
     def test_finds_program_higher_in_dir_tree(self, fs):
-        fs_root = pathlib.Path("foo")
-        pwd = fs_root / "subprojfoo" / "libbar"
-        make_mbed_program_files(fs_root, fs)
+        program_root = pathlib.Path("foo")
+        pwd = program_root / "subprojfoo" / "libbar"
+        make_mbed_program_files(program_root, fs)
         fs.create_dir(str(pwd))
 
-        self.assertTrue(_find_program_root(pwd))
+        self.assertEqual(_find_program_root(pwd), program_root.resolve())
 
     @patchfs
     def test_finds_program_at_current_path(self, fs):
-        fs_root = pathlib.Path("foo")
-        make_mbed_program_files(fs_root, fs)
+        program_root = pathlib.Path("foo")
+        make_mbed_program_files(program_root, fs)
 
-        self.assertTrue(_find_program_root(fs_root))
+        self.assertEqual(_find_program_root(program_root), program_root.resolve())
 
     @patchfs
     def test_raises_if_no_program_found(self, fs):
-        fs_root = pathlib.Path("foo")
-        fs.create_dir(str(fs_root))
+        program_root = pathlib.Path("foo")
+        fs.create_dir(str(program_root))
 
         with self.assertRaises(ProgramNotFound):
-            _find_program_root(fs_root)
+            _find_program_root(program_root)
