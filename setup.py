@@ -38,7 +38,7 @@ setup(
     description="Project and library management for Mbed OS",
     keywords="Arm Mbed OS MbedOS Arm Mbed OS MbedOS Arm Mbed OS MbedOS project library",
     include_package_data=True,
-    install_requires=["python-dotenv", "Click==7.0", "dataclasses; python_version<'3.7'"],
+    install_requires=["python-dotenv", "Click==7.0", "dataclasses; python_version<'3.7'", "mbed-tools-lib"],
     license="Apache 2.0",
     long_description_content_type="text/markdown",
     long_description=long_description,

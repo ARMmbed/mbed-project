@@ -9,6 +9,7 @@ from pathlib import Path
 
 import git
 
+from mbed_project.exceptions import VersionControlError, ProgramNotFound, ExistingProgram
 from mbed_project._internal.project_data import MbedProgramData
 
 logger = logging.getLogger(__name__)
@@ -142,13 +143,3 @@ def _find_program_root(cwd: Path) -> MbedProgramData:
     )
 
 
-class VersionControlError(Exception):
-    """Raised when a source control management operation failed."""
-
-
-class ExistingProgram(Exception):
-    """Raised when a program already exists at a given path."""
-
-
-class ProgramNotFound(Exception):
-    """Raised when an expected program is not found."""

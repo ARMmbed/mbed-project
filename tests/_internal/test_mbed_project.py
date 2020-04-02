@@ -10,8 +10,8 @@ import git
 
 from pyfakefs.fake_filesystem_unittest import patchfs
 
-from mbed_project._internal.program import MbedProgram, _find_program_root
-from mbed_project._internal.program import ExistingProgram, ProgramNotFound, VersionControlError
+from mbed_project.program import MbedProgram, _find_program_root
+from mbed_project.program import ExistingProgram, ProgramNotFound, VersionControlError
 from tests.factories import make_mbed_program_files
 
 
@@ -25,7 +25,7 @@ class TestInitialiseProgram(TestCase):
             MbedProgram.from_new_local_directory(program_root)
 
     @patchfs
-    @mock.patch("mbed_project._internal.program.git.Repo", autospec=True)
+    @mock.patch("mbed_project.program.git.Repo", autospec=True)
     def test_from_new_local_dir_generates_valid_program(self, mock_repo, fs):
         fs_root = pathlib.Path("foo")
         fs.create_dir(str(fs_root))
@@ -37,7 +37,7 @@ class TestInitialiseProgram(TestCase):
         mock_repo.init.assert_called_once_with(str(program_root))
 
     @patchfs
-    @mock.patch("mbed_project._internal.program.git.Repo", autospec=True)
+    @mock.patch("mbed_project.program.git.Repo", autospec=True)
     def test_from_url_raises_if_clone_fails(self, mock_repo, fs):
         fs_root = pathlib.Path("foo")
         fs.create_dir(str(fs_root))
@@ -57,8 +57,8 @@ class TestInitialiseProgram(TestCase):
             MbedProgram.from_remote_url(url, fs_root)
 
     @patchfs
-    @mock.patch("mbed_project._internal.program._tree_contains_program", autospec=True)
-    @mock.patch("mbed_project._internal.program.git.Repo", autospec=True)
+    @mock.patch("mbed_project.program._tree_contains_program", autospec=True)
+    @mock.patch("mbed_project.program.git.Repo", autospec=True)
     def test_from_url_returns_valid_program(self, mock_repo, mock_tree_contains_program, fs):
         fs_root = pathlib.Path("foo")
         make_mbed_program_files(fs_root, fs)
@@ -80,7 +80,7 @@ class TestInitialiseProgram(TestCase):
             MbedProgram.from_existing_local_program_directory(program_root)
 
     @patchfs
-    @mock.patch("mbed_project._internal.program.git.Repo", autospec=True)
+    @mock.patch("mbed_project.program.git.Repo", autospec=True)
     def test_from_existing_returns_valid_program(self, mock_repo, fs):
         fs_root = pathlib.Path("/foo")
         make_mbed_program_files(fs_root, fs)
