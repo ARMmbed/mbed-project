@@ -25,7 +25,7 @@ class TestMbedProgramData(TestCase):
     @patchfs
     def test_from_new_returns_valid_program(self, fs):
         root = pathlib.Path("foo")
-        fs.create_dir(str(root))
+        fs.create_dir(root)
 
         program = MbedProgramData.from_new(root)
 
@@ -34,7 +34,7 @@ class TestMbedProgramData(TestCase):
     @patchfs
     def test_from_existing_raises_if_program_doesnt_exist(self, fs):
         root = pathlib.Path("foo")
-        fs.create_dir(str(root))
+        fs.create_dir(root)
 
         with self.assertRaises(ValueError):
             MbedProgramData.from_existing(root)
