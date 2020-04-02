@@ -31,7 +31,7 @@ class MbedProgram:
         Args:
             repo: The program's associated git repository.
             program_data: An instance of `MbedProgramData` containing metadata about the program.
-            mbed_os: An instance of `MbedOS` containing metadata about MbedOS copy used.
+            mbed_os: An instance of `MbedOS` containing metadata about the Mbed OS copy used.
         """
         self.repo = repo
         self.metadata = program_data
