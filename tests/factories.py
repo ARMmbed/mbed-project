@@ -30,4 +30,4 @@ def make_mbed_lib_reference(root, fs, resolved=False, ref_url=None):
 def make_mbed_os_files(root, fs):
     if not root.exists():
         fs.create_dir(root)
-    fs.create_file(root / "targets.json")
+    fs.create_file(root / "targets" / "targets.json")

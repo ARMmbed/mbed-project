@@ -81,7 +81,7 @@ class TestMbedOS(TestCase):
 
         mbed_os = MbedOS.from_existing(root_path)
 
-        self.assertEqual(mbed_os.targets_json_file, root_path / "targets.json")
+        self.assertEqual(mbed_os.targets_json_file, root_path / "targets" / "targets.json")
 
     @patchfs
     def test_raises_if_files_missing(self, fs):

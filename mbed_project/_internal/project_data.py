@@ -114,7 +114,7 @@ class MbedOS:
     @classmethod
     def from_existing(cls, root_path: Path) -> "MbedOS":
         """Create MbedOS from a directory constaining an existing MbedOS installation."""
-        targets_json_file = root_path / "targets.json"
+        targets_json_file = root_path / "targets" / "targets.json"
 
         if not targets_json_file.exists():
             raise ValueError("This MbedOS copy does not contain a targets.json file.")
