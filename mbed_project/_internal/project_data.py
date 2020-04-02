@@ -112,7 +112,7 @@ class MbedOS:
     targets_json_file: Path
 
     @classmethod
-    def from_existing(cls, root_path: Path):
+    def from_existing(cls, root_path: Path) -> "MbedOS":
         targets_json_file = root_path / "targets.json"
 
         if not targets_json_file.exists():
