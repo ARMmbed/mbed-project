@@ -12,6 +12,7 @@ from pyfakefs.fake_filesystem_unittest import patchfs
 
 from mbed_project.mbed_program import MbedProgram, _find_program_root
 from mbed_project.mbed_program import ExistingProgram, ProgramNotFound, VersionControlError
+from mbed_project._internal.project_data import MbedProgramData
 from tests.factories import make_mbed_program_files
 
 
@@ -33,7 +34,8 @@ class TestInitialiseProgram(TestCase):
 
         program = MbedProgram.from_new_local_directory(program_root)
 
-        self.assertTrue(program.metadata.mbed_file.exists())
+        self.assertEqual(program.metadata, MbedProgramData.from_existing(program_root))
+        self.assertEqual(program.repo, mock_repo.init.return_value)
         mock_repo.init.assert_called_once_with(str(program_root))
 
     @patchfs
@@ -67,7 +69,8 @@ class TestInitialiseProgram(TestCase):
 
         program = MbedProgram.from_remote_url(url, fs_root)
 
-        self.assertTrue(program.metadata.mbed_file.exists())
+        self.assertEqual(program.metadata, MbedProgramData.from_existing(fs_root))
+        self.assertEqual(program.repo, mock_repo.clone_from.return_value)
         mock_repo.clone_from.assert_called_once_with(url, str(fs_root))
 
     @patchfs
@@ -87,7 +90,8 @@ class TestInitialiseProgram(TestCase):
 
         program = MbedProgram.from_existing_local_program_directory(fs_root)
 
-        self.assertTrue(program.metadata.mbed_file.exists())
+        self.assertEqual(program.metadata, MbedProgramData.from_existing(fs_root))
+        self.assertEqual(program.repo, mock_repo.return_value)
         mock_repo.assert_called_once_with(str(fs_root))
 
 
