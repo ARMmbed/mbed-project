@@ -141,5 +141,3 @@ def _find_program_root(cwd: Path) -> MbedProgramData:
         f"No program found from {cwd.resolve()} to {cwd.resolve().root}. Please set the cwd to a program directory or "
         "subdirectory."
     )
-
-
