@@ -6,7 +6,8 @@ from mbed_project._internal.project_data import MbedLibReference
 
 
 def make_mbed_program_files(root, fs, config_file_name="mbed_app.json"):
-    fs.create_dir(root)
+    if not root.exists():
+        fs.create_dir(root)
     fs.create_file(root / ".mbed")
     fs.create_file(root / config_file_name)
 
@@ -14,7 +15,8 @@ def make_mbed_program_files(root, fs, config_file_name="mbed_app.json"):
 def make_mbed_lib_reference(root, fs, resolved=False, ref_url=None):
     ref_file = root / "mylib.lib"
     source_dir = ref_file.with_suffix("")
-    fs.create_dir(root)
+    if not root.exists():
+        fs.create_dir(root)
     fs.create_file(ref_file)
     if resolved:
         fs.create_dir(source_dir)
@@ -26,5 +28,6 @@ def make_mbed_lib_reference(root, fs, resolved=False, ref_url=None):
 
 
 def make_mbed_os_files(root, fs):
-    fs.create_dir(root)
+    if not root.exists():
+        fs.create_dir(root)
     fs.create_file(root / "targets.json")
