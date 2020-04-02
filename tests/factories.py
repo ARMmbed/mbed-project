@@ -23,3 +23,8 @@ def make_mbed_lib_reference(root, fs, resolved=False, ref_url=None):
         ref_file.write_text(ref_url)
 
     return MbedLibReference(reference_file=ref_file, source_code_path=source_dir)
+
+
+def make_mbed_os_files(root, fs):
+    fs.create_dir(root)
+    fs.create_file(root / "targets.json")
