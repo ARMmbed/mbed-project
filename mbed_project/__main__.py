@@ -10,6 +10,7 @@ from mbed_project.mbed_tools import init, checkout, libs, clone
 
 @click.group()
 def group() -> None:
+    """Groups commands."""
     pass
 
 

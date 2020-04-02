@@ -2,7 +2,7 @@
 # Copyright (C) 2020 Arm Mbed. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-"""Tests for project_data.py"""
+"""Tests for project_data.py."""
 import pathlib
 
 from unittest import TestCase
