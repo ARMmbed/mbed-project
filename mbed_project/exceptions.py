@@ -21,3 +21,7 @@ class ExistingProgram(MbedProjectError):
 
 class ProgramNotFound(MbedProjectError):
     """Raised when an expected program is not found."""
+
+
+class MbedOSNotFound(MbedProjectError):
+    """A valid copy of MbedOS was not found."""

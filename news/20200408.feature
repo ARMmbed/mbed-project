@@ -1,0 +1,1 @@
+Add library reference handling

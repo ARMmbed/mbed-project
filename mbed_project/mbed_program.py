@@ -6,12 +6,18 @@
 import logging
 
 from pathlib import Path
-from typing import Optional
+from typing import Iterable
 
 import git
 
 from mbed_project.exceptions import VersionControlError, ProgramNotFound, ExistingProgram
-from mbed_project._internal.project_data import MbedProgramData, MbedOS
+from mbed_project._internal.project_data import (
+    MbedProgramData,
+    MbedLibReference,
+    MbedOS,
+    PROGRAM_ROOT_FILE_NAME,
+    MBED_OS_DIR_NAME,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +31,7 @@ class MbedProgram:
     `MbedProgram` provides classmethods to cope with different initialisation scenarios.
     """
 
-    def __init__(self, repo: git.Repo, program_data: MbedProgramData, mbed_os: Optional[MbedOS]) -> None:
+    def __init__(self, repo: git.Repo, program_data: MbedProgramData, mbed_os: MbedOS) -> None:
         """Initialise the program attributes.
 
         Args:
@@ -36,6 +42,7 @@ class MbedProgram:
         self.repo = repo
         self.metadata = program_data
         self.mbed_os = mbed_os
+        self.lib_references = self._find_lib_references()
 
     @classmethod
     def from_remote_url(cls, url: str, dst_path: Path) -> "MbedProgram":
@@ -54,14 +61,23 @@ class MbedProgram:
                 "to an empty directory."
             )
 
-        logger.info(f"Cloning Mbed program from URL {url}")
+        print(f"Cloning Mbed program from URL '{url}'.")
         try:
             repo = git.Repo.clone_from(url, str(dst_path))
         except git.exc.GitCommandError as e:
             raise VersionControlError(f"Failed to clone from the remote URL. Error from VCS: {e.stderr}.")
 
-        program = MbedProgramData.from_existing(dst_path)
-        mbed_os = None
+        try:
+            program = MbedProgramData.from_existing(dst_path)
+        except ValueError as e:
+            raise ProgramNotFound(
+                f"This repository does not contain a valid Mbed program at the top level. {e}"
+                "Cloned programs must contain an mbed-os.lib file containing the URL to the Mbed OS repository. It is "
+                "possible you have cloned a repository containing multiple mbed-programs. If this is the case, you "
+                "should cd to a directory containing a program before performing any other operations."
+            )
+
+        mbed_os = MbedOS.from_new(dst_path / MBED_OS_DIR_NAME)
         return cls(repo, program, mbed_os)
 
     @classmethod
@@ -87,7 +103,7 @@ class MbedProgram:
         program_data = MbedProgramData.from_new(dir_path)
         logger.info(f"Creating git repository for the Mbed program {dir_path}")
         repo = git.Repo.init(str(dir_path))
-        mbed_os = None
+        mbed_os = MbedOS.from_new(dir_path / MBED_OS_DIR_NAME)
         return cls(repo, program_data, mbed_os)
 
     @classmethod
@@ -104,8 +120,48 @@ class MbedProgram:
         logger.info(f"Found existing Mbed program at path '{program_root}'")
         repo = git.Repo(str(program_root))
         program = MbedProgramData.from_existing(program_root)
-        mbed_os = MbedOS.from_existing(program_root / "mbed-os")
+        mbed_os = MbedOS.from_existing(program_root / MBED_OS_DIR_NAME)
         return cls(repo, program, mbed_os)
+
+    def resolve_libraries(self) -> None:
+        """Clone all external dependencies defined in .lib files.
+
+        This function will recursively clone all unresolved dependencies until all are resolved.
+
+        Raises:
+            VersionControlError: The git clone failed.
+        """
+        for lib in self._find_unresolved_lib_references():
+            git_ref = lib.get_git_reference()
+            print(f"Resolving library reference {git_ref.repo_url}.")
+            try:
+                repo = git.Repo.clone_from(git_ref.repo_url, str(lib.source_code_path))
+                if git_ref.ref:
+                    print(f"Checking out revision {git_ref.ref} for library {git_ref.repo_url}.")
+                    repo.git.checkout(git_ref.ref)
+            except git.exc.GitCommandError as err:
+                raise VersionControlError(
+                    f"Cloning external dependency from url '{git_ref.repo_url}' failed. Error from VCS: {err.stderr}"
+                )
+
+        # Check if we find any new references after cloning dependencies.
+        if list(self._find_unresolved_lib_references()):
+            self.resolve_libraries()
+
+    def _find_lib_references(self) -> Iterable[MbedLibReference]:
+        program_root = self.metadata.mbed_file.parent
+        return (
+            MbedLibReference(lib, lib.with_suffix(""))
+            for lib in program_root.rglob("*.lib")
+            if not self._in_ignore_path(lib)
+        )
+
+    def _find_unresolved_lib_references(self) -> Iterable[MbedLibReference]:
+        return (lib for lib in self._find_lib_references() if not lib.is_resolved())
+
+    def _in_ignore_path(self, lib_reference_path: Path) -> bool:
+        """Mbed OS contains some test .lib files we want to ignore."""
+        return self.mbed_os.root in lib_reference_path.parents
 
 
 def _tree_contains_program(path: Path) -> bool:
@@ -133,14 +189,18 @@ def _find_program_root(cwd: Path) -> Path:
     Args:
         cwd: The directory path to search for a program.
 
+    Raises:
+        ProgramNotFound: No `MbedProgramData` found in the path.
+
     Returns:
         Path containing the .mbed file.
     """
     potential_root = cwd.resolve()
     while str(potential_root) != str(potential_root.root):
         logging.debug(f"Searching for .mbed file at path {potential_root}")
-        if (potential_root / ".mbed").exists():
+        if (potential_root / PROGRAM_ROOT_FILE_NAME).exists():
             return potential_root
+
         potential_root = potential_root.parent
 
     raise ProgramNotFound(
