@@ -6,11 +6,12 @@
 import logging
 
 from pathlib import Path
+from typing import Optional
 
 import git
 
 from mbed_project.exceptions import VersionControlError, ProgramNotFound, ExistingProgram
-from mbed_project._internal.project_data import MbedProgramData
+from mbed_project._internal.project_data import MbedProgramData, MbedOS
 
 logger = logging.getLogger(__name__)
 
@@ -24,15 +25,17 @@ class MbedProgram:
     `MbedProgram` provides classmethods to cope with different initialisation scenarios.
     """
 
-    def __init__(self, repo: git.Repo, program_data: MbedProgramData) -> None:
+    def __init__(self, repo: git.Repo, program_data: MbedProgramData, mbed_os: Optional[MbedOS]) -> None:
         """Initialise the program attributes.
 
         Args:
             repo: The program's associated git repository.
             program_data: An instance of `MbedProgramData` containing metadata about the program.
+            mbed_os: An instance of `MbedOS` containing metadata about the Mbed OS copy used.
         """
         self.repo = repo
         self.metadata = program_data
+        self.mbed_os = mbed_os
 
     @classmethod
     def from_remote_url(cls, url: str, dst_path: Path) -> "MbedProgram":
@@ -58,7 +61,8 @@ class MbedProgram:
             raise VersionControlError(f"Failed to clone from the remote URL. Error from VCS: {e.stderr}.")
 
         program = MbedProgramData.from_existing(dst_path)
-        return cls(repo, program)
+        mbed_os = None
+        return cls(repo, program, mbed_os)
 
     @classmethod
     def from_new_local_directory(cls, dir_path: Path) -> "MbedProgram":
@@ -83,7 +87,8 @@ class MbedProgram:
         program_data = MbedProgramData.from_new(dir_path)
         logger.info(f"Creating git repository for the Mbed program {dir_path}")
         repo = git.Repo.init(str(dir_path))
-        return cls(repo, program_data)
+        mbed_os = None
+        return cls(repo, program_data, mbed_os)
 
     @classmethod
     def from_existing_local_program_directory(cls, dir_path: Path) -> "MbedProgram":
@@ -99,7 +104,8 @@ class MbedProgram:
         logger.info(f"Found existing Mbed program at path '{program_root}'")
         repo = git.Repo(str(program_root))
         program = MbedProgramData.from_existing(program_root)
-        return cls(repo, program)
+        mbed_os = MbedOS.from_existing(program_root)
+        return cls(repo, program, mbed_os)
 
 
 def _tree_contains_program(path: Path) -> bool:

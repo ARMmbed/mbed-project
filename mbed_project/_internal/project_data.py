@@ -97,3 +97,25 @@ class MbedProgramData:
             raise ValueError(f"An Mbed program does not exist at {root_path}")
 
         return cls(config_file=config, mbed_file=mbed_file)
+
+
+@dataclass
+class MbedOS:
+    """Metadata associated with a copy of MbedOS.
+
+    This object holds information about MbedOS used by MbedProgram.
+
+    Attributes:
+        targets_json_file: Path to a targets.json file, which contains target data specific to MbedOS revision.
+    """
+
+    targets_json_file: Path
+
+    @classmethod
+    def from_existing(cls, root_path: Path) -> "MbedOS":
+        """Create MbedOS from a directory constaining an existing MbedOS installation."""
+        targets_json_file = root_path / "targets" / "targets.json"
+
+        if not targets_json_file.exists():
+            raise ValueError("This MbedOS copy does not contain a targets.json file.")
+        return cls(targets_json_file=targets_json_file)
