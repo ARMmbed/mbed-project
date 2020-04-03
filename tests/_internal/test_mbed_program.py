@@ -87,12 +87,12 @@ class TestInitialiseProgram(TestCase):
     def test_from_existing_returns_valid_program(self, mock_repo, fs):
         fs_root = pathlib.Path("/foo")
         make_mbed_program_files(fs_root, fs)
-        make_mbed_os_files(fs_root, fs)
+        make_mbed_os_files(fs_root / "mbed-os", fs)
 
         program = MbedProgram.from_existing_local_program_directory(fs_root)
 
         self.assertEqual(program.metadata, MbedProgramData.from_existing(fs_root))
-        self.assertEqual(program.mbed_os, MbedOS.from_existing(fs_root))
+        self.assertEqual(program.mbed_os, MbedOS.from_existing(fs_root / "mbed-os"))
         self.assertEqual(program.repo, mock_repo.return_value)
         mock_repo.assert_called_once_with(str(fs_root))
 
