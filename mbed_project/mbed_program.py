@@ -104,7 +104,7 @@ class MbedProgram:
         logger.info(f"Found existing Mbed program at path '{program_root}'")
         repo = git.Repo(str(program_root))
         program = MbedProgramData.from_existing(program_root)
-        mbed_os = MbedOS.from_existing(program_root)
+        mbed_os = MbedOS.from_existing(program_root / "mbed-os")
         return cls(repo, program, mbed_os)
 
 
