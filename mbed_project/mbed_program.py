@@ -19,6 +19,7 @@ from mbed_project._internal.project_data import (
     PROGRAM_ROOT_FILE_NAME,
     MBED_OS_DIR_NAME,
 )
+from mbed_project._internal.progress import ProgressReporter
 
 logger = logging.getLogger(__name__)
 
@@ -213,7 +214,7 @@ def _clone_lib(git_ref: GitReference, dst_dir: Path) -> None:
         VersionControlError: Cloning the repository failed.
     """
     try:
-        repo = git.Repo.clone_from(git_ref.repo_url, str(dst_dir))
+        repo = git.Repo.clone_from(git_ref.repo_url, str(dst_dir), progress=ProgressReporter())
         if git_ref.ref:
             logger.info(f"Checking out revision {git_ref.ref} for library {git_ref.repo_url}.")
             repo.git.checkout(git_ref.ref)

@@ -14,7 +14,7 @@ from mbed_project.mbed_tools import init, clone, checkout, libs
 @mock.patch("mbed_project.mbed_tools.cli.initialise_project", autospec=True)
 class TestInitCommand(TestCase):
     def test_calls_init_function_with_correct_args(self, mock_initialise_project):
-        CliRunner().invoke(init, ["path", "--fetch-mbed-os"])
+        CliRunner().invoke(init, ["path", "--create-only"])
         mock_initialise_project.assert_called_once_with(pathlib.Path("path"), True)
 
 

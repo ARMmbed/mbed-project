@@ -112,17 +112,20 @@ class TestInitialiseProgram(TestCase):
 @mock.patch("mbed_project.mbed_program.git.Repo", autospec=True)
 class TestMbedProgramLibraryHandling(TestCase):
     @patchfs
-    def test_hydrates_top_level_library_references(self, mock_repo, fs):
+    @mock.patch("mbed_project.mbed_program.ProgressReporter")
+    def test_hydrates_top_level_library_references(self, progress_mock, mock_repo, fs):
         fs_root = pathlib.Path("/foo")
         make_mbed_program_files(fs_root, fs)
         make_mbed_os_files(fs_root / "mbed-os", fs)
         lib = make_mbed_lib_reference(fs_root, fs, ref_url="https://git")
-        mock_repo.clone_from.side_effect = lambda url, dst_dir: fs.create_dir(dst_dir)
+        mock_repo.clone_from.side_effect = lambda url, dst_dir, progress: fs.create_dir(dst_dir)
 
         program = MbedProgram.from_existing_local_program_directory(fs_root)
         program.resolve_libraries()
 
-        mock_repo.clone_from.assert_called_once_with(lib.get_git_reference().repo_url, str(lib.source_code_path))
+        mock_repo.clone_from.assert_called_once_with(
+            lib.get_git_reference().repo_url, str(lib.source_code_path), progress=progress_mock()
+        )
         self.assertTrue(lib.is_resolved())
 
     @patchfs
@@ -138,7 +141,7 @@ class TestMbedProgramLibraryHandling(TestCase):
         )
         # Here we mock the effects of a recursive reference lookup. We create a new lib reference as a side effect of
         # the first call to the mock. Then we create the src dir, thus resolving the lib, on the second call.
-        mock_repo.clone_from.side_effect = lambda url, dst_dir: (
+        mock_repo.clone_from.side_effect = lambda url, dst_dir, progress: (
             make_mbed_lib_reference(pathlib.Path(dst_dir), fs, name=lib2.reference_file.name, ref_url="https://valid2"),
             fs.create_dir(lib2.source_code_path),
         )
