@@ -15,6 +15,7 @@ from mbed_project._internal.project_data import (
     MbedProgramData,
     MbedLibReference,
     MbedOS,
+    GitReference,
     PROGRAM_ROOT_FILE_NAME,
     MBED_OS_DIR_NAME,
 )
@@ -61,7 +62,7 @@ class MbedProgram:
                 "to an empty directory."
             )
 
-        print(f"Cloning Mbed program from URL '{url}'.")
+        logger.info(f"Cloning Mbed program from URL '{url}'.")
         try:
             repo = git.Repo.clone_from(url, str(dst_path))
         except git.exc.GitCommandError as e:
@@ -133,16 +134,8 @@ class MbedProgram:
         """
         for lib in self._find_unresolved_lib_references():
             git_ref = lib.get_git_reference()
-            print(f"Resolving library reference {git_ref.repo_url}.")
-            try:
-                repo = git.Repo.clone_from(git_ref.repo_url, str(lib.source_code_path))
-                if git_ref.ref:
-                    print(f"Checking out revision {git_ref.ref} for library {git_ref.repo_url}.")
-                    repo.git.checkout(git_ref.ref)
-            except git.exc.GitCommandError as err:
-                raise VersionControlError(
-                    f"Cloning external dependency from url '{git_ref.repo_url}' failed. Error from VCS: {err.stderr}"
-                )
+            logger.info(f"Resolving library reference {git_ref.repo_url}.")
+            _clone_lib(git_ref, lib.source_code_path)
 
         # Check if we find any new references after cloning dependencies.
         if list(self._find_unresolved_lib_references()):
@@ -207,3 +200,24 @@ def _find_program_root(cwd: Path) -> Path:
         f"No program found from {cwd.resolve()} to {cwd.resolve().root}. Please set the cwd to a program directory or "
         "subdirectory."
     )
+
+
+def _clone_lib(git_ref: GitReference, dst_dir: Path) -> None:
+    """Clone a library repository.
+
+    Args:
+        git_ref: Object containing git information.
+        dst_dir: Destination directory for the cloned repo.
+
+    Raises:
+        VersionControlError: Cloning the repository failed.
+    """
+    try:
+        repo = git.Repo.clone_from(git_ref.repo_url, str(dst_dir))
+        if git_ref.ref:
+            logger.info(f"Checking out revision {git_ref.ref} for library {git_ref.repo_url}.")
+            repo.git.checkout(git_ref.ref)
+    except git.exc.GitCommandError as err:
+        raise VersionControlError(
+            f"Cloning external dependency from url '{git_ref.repo_url}' failed. Error from VCS: {err.stderr}"
+        )
