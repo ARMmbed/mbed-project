@@ -10,10 +10,11 @@ import git
 
 from pyfakefs.fake_filesystem_unittest import patchfs
 
-from mbed_project.mbed_program import MbedProgram, _find_program_root
-from mbed_project.mbed_program import ExistingProgram, ProgramNotFound, VersionControlError
-from mbed_project._internal.project_data import MbedProgramData, MbedOS
-from tests.factories import make_mbed_program_files, make_mbed_os_files
+from mbed_project import MbedProgram
+from mbed_project.exceptions import ExistingProgram, ProgramNotFound, VersionControlError
+from mbed_project.mbed_program import _find_program_root
+from mbed_project._internal.project_data import MbedProgramData, MbedLibReference, MbedOS
+from tests.factories import make_mbed_program_files, make_mbed_lib_reference, make_mbed_os_files
 
 
 class TestInitialiseProgram(TestCase):
@@ -59,6 +60,17 @@ class TestInitialiseProgram(TestCase):
             MbedProgram.from_remote_url(url, fs_root)
 
     @patchfs
+    @mock.patch("mbed_project.mbed_program.git.Repo", autospec=True)
+    def test_from_url_raises_if_cloned_repo_is_not_program(self, mock_repo, fs):
+        fs_root = pathlib.Path("foo")
+        fs.create_dir(str(fs_root))
+        url = "https://validrepo.com"
+        mock_repo.clone_from.side_effect = lambda url, dst_dir: fs.create_dir(dst_dir)
+
+        with self.assertRaises(ProgramNotFound):
+            MbedProgram.from_remote_url(url, fs_root / "corrupt-prog")
+
+    @patchfs
     @mock.patch("mbed_project.mbed_program._tree_contains_program", autospec=True)
     @mock.patch("mbed_project.mbed_program.git.Repo", autospec=True)
     def test_from_url_returns_valid_program(self, mock_repo, mock_tree_contains_program, fs):
@@ -95,6 +107,47 @@ class TestInitialiseProgram(TestCase):
         self.assertEqual(program.mbed_os, MbedOS.from_existing(fs_root / "mbed-os"))
         self.assertEqual(program.repo, mock_repo.return_value)
         mock_repo.assert_called_once_with(str(fs_root))
+
+
+@mock.patch("mbed_project.mbed_program.git.Repo", autospec=True)
+class TestMbedProgramLibraryHandling(TestCase):
+    @patchfs
+    def test_hydrates_top_level_library_references(self, mock_repo, fs):
+        fs_root = pathlib.Path("/foo")
+        make_mbed_program_files(fs_root, fs)
+        make_mbed_os_files(fs_root / "mbed-os", fs)
+        lib = make_mbed_lib_reference(fs_root, fs, ref_url="https://git")
+        mock_repo.clone_from.side_effect = lambda url, dst_dir: fs.create_dir(dst_dir)
+
+        program = MbedProgram.from_existing_local_program_directory(fs_root)
+        program.resolve_libraries()
+
+        mock_repo.clone_from.assert_called_once_with(lib.get_git_reference().repo_url, str(lib.source_code_path))
+        self.assertTrue(lib.is_resolved())
+
+    @patchfs
+    def test_hydrates_recursive_dependencies(self, mock_repo, fs):
+        fs_root = pathlib.Path("/foo")
+        make_mbed_program_files(fs_root, fs)
+        make_mbed_os_files(fs_root / "mbed-os", fs)
+        lib = make_mbed_lib_reference(fs_root, fs, ref_url="https://git")
+        # Create a lib reference without touching the fs at this point, we want to mock the effects of a recursive
+        # reference lookup and we need to assert the reference was resolved.
+        lib2 = MbedLibReference(
+            reference_file=(lib.source_code_path / "lib2.lib"), source_code_path=(lib.source_code_path / "lib2")
+        )
+        # Here we mock the effects of a recursive reference lookup. We create a new lib reference as a side effect of
+        # the first call to the mock. Then we create the src dir, thus resolving the lib, on the second call.
+        mock_repo.clone_from.side_effect = lambda url, dst_dir: (
+            make_mbed_lib_reference(pathlib.Path(dst_dir), fs, name=lib2.reference_file.name, ref_url="https://valid2"),
+            fs.create_dir(lib2.source_code_path),
+        )
+
+        program = MbedProgram.from_existing_local_program_directory(fs_root)
+        program.resolve_libraries()
+
+        self.assertTrue(lib.is_resolved())
+        self.assertTrue(lib2.is_resolved())
 
 
 class TestFindProgramRoot(TestCase):
