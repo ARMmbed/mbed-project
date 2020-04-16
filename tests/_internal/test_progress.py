@@ -1,3 +1,7 @@
+#
+# Copyright (C) 2020 Arm Mbed. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 from unittest import TestCase, mock
 
 from mbed_project._internal.progress import ProgressReporter, ProgressBar
@@ -16,7 +20,7 @@ class TestProgressBar(TestCase):
 
         self.assertIsNone(bar.total)
 
-        bar.update_progress(1,2, total_size=33)
+        bar.update_progress(1, 2, total_size=33)
 
         self.assertEqual(bar.total, 33)
 

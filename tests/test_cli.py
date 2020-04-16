@@ -22,7 +22,7 @@ class TestInitCommand(TestCase):
 
         self.assertEquals(
             result.output,
-            "Creating a new Mbed program at path 'path'.\nDownloading mbed-os and adding it to the project.\n"
+            "Creating a new Mbed program at path 'path'.\nDownloading mbed-os and adding it to the project.\n",
         )
 
 
