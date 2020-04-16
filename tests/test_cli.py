@@ -17,6 +17,14 @@ class TestInitCommand(TestCase):
         CliRunner().invoke(init, ["path", "--create-only"])
         mock_initialise_project.assert_called_once_with(pathlib.Path("path"), True)
 
+    def test_echos_mbed_os_message_when_required(self, mock_initialise_project):
+        result = CliRunner().invoke(init, ["path"])
+
+        self.assertEquals(
+            result.output,
+            "Creating a new Mbed program at path 'path'.\nDownloading mbed-os and adding it to the project.\n"
+        )
+
 
 @mock.patch("mbed_project.mbed_tools.cli.clone_project", autospec=True)
 class TestCloneCommand(TestCase):
