@@ -14,8 +14,16 @@ from mbed_project.mbed_tools import init, clone, checkout, libs
 @mock.patch("mbed_project.mbed_tools.cli.initialise_project", autospec=True)
 class TestInitCommand(TestCase):
     def test_calls_init_function_with_correct_args(self, mock_initialise_project):
-        CliRunner().invoke(init, ["path", "--fetch-mbed-os"])
+        CliRunner().invoke(init, ["path", "--create-only"])
         mock_initialise_project.assert_called_once_with(pathlib.Path("path"), True)
+
+    def test_echos_mbed_os_message_when_required(self, mock_initialise_project):
+        result = CliRunner().invoke(init, ["path"])
+
+        self.assertEquals(
+            result.output,
+            "Creating a new Mbed program at path 'path'.\nDownloading mbed-os and adding it to the project.\n",
+        )
 
 
 @mock.patch("mbed_project.mbed_tools.cli.clone_project", autospec=True)

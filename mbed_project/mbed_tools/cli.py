@@ -12,20 +12,17 @@ from mbed_project import initialise_project, clone_project, get_libs, checkout_p
 
 
 @click.command()
-@click.option(
-    "--fetch-mbed-os",
-    "-m",
-    is_flag=True,
-    show_default=True,
-    help="Fetch mbed-os from online repository and add it to the project.",
-)
+@click.option("--create-only", "-c", is_flag=True, show_default=True, help="Create a program without fetching mbed-os.")
 @click.argument("path", type=click.Path())
-def init(path: str, fetch_mbed_os: bool) -> None:
-    """Creates a new Mbed project at the specified path. Optionally downloading mbed-os and adding it to the project.
+def init(path: str, create_only: bool) -> None:
+    """Creates a new Mbed project at the specified path. Downloads mbed-os and adds it to the project.
 
     PATH: Path to the destination directory for the project. Will be created if it does not exist.
     """
-    initialise_project(pathlib.Path(path), fetch_mbed_os)
+    click.echo(f"Creating a new Mbed program at path '{path}'.")
+    if not create_only:
+        click.echo("Downloading mbed-os and adding it to the project.")
+    initialise_project(pathlib.Path(path), create_only)
 
 
 @click.command()

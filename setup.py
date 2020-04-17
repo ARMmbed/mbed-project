@@ -44,6 +44,7 @@ setup(
         "dataclasses; python_version<'3.7'",
         "mbed-tools-lib",
         "git-python",
+        "tqdm",
     ],
     license="Apache 2.0",
     long_description_content_type="text/markdown",

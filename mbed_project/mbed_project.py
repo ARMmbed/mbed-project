@@ -4,7 +4,10 @@
 #
 """Defines the public API of the package."""
 import pathlib
+
 from typing import List
+
+from mbed_project.mbed_program import MbedProgram
 
 
 def clone_project(url: str, recursive: bool = False) -> None:
@@ -17,14 +20,16 @@ def clone_project(url: str, recursive: bool = False) -> None:
     pass
 
 
-def initialise_project(path: pathlib.Path, fetch_mbed_os: bool = True) -> None:
+def initialise_project(path: pathlib.Path, create_only: bool) -> None:
     """Create a new Mbed project, optionally fetching and adding mbed-os.
 
     Args:
         path: Path to the project folder. Created if it doesn't exist.
-        fetch_mbed_os: Flag which enables fetching mbed-os and adding it to the project.
+        create_only: Flag which suppreses fetching mbed-os. If the value is `False`, fetch mbed-os from the remote.
     """
-    pass
+    program = MbedProgram.from_new_local_directory(path)
+    if not create_only:
+        program.resolve_libraries()
 
 
 def checkout_project_revision(path: pathlib.Path, project_revision: str, force: bool = False) -> None:
