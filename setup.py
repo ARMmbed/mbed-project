@@ -42,7 +42,7 @@ setup(
         "python-dotenv",
         "Click==7.0",
         "dataclasses; python_version<'3.7'",
-        "mbed-tools-lib",
+        "mbed-tools-lib~=1.2",
         "git-python",
         "tqdm",
     ],
