@@ -29,7 +29,7 @@ def clone(url: str, dst_dir: Path) -> git.Repo:
     """Clone a library repository.
 
     Args:
-        git_ref: Object containing git information.
+        url: URL of the remote to clone.
         dst_dir: Destination directory for the cloned repo.
 
     Raises:
