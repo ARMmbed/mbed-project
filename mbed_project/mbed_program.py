@@ -185,7 +185,7 @@ def _find_program_root(cwd: Path) -> Path:
         Path containing the .mbed file.
     """
     potential_root = cwd.resolve()
-    while str(potential_root) != str(potential_root.root):
+    while str(potential_root) != str(potential_root.anchor):
         logging.debug(f"Searching for .mbed file at path {potential_root}")
         if (potential_root / PROGRAM_ROOT_FILE_NAME).exists():
             logger.debug(f".mbed file found at {potential_root}")
