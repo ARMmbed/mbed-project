@@ -85,10 +85,9 @@ class TestInitialiseProgram(TestCase):
 
         program = MbedProgram.from_existing_local_program_directory(fs_root)
 
-        self.assertEqual(program.metadata, MbedProgramData.from_existing(fs_root))
-        self.assertEqual(program.mbed_os, MbedOS.from_existing(fs_root / "mbed-os"))
-        self.assertEqual(program.repo, mock_repo.return_value)
-        mock_repo.assert_called_once_with(str(fs_root))
+        self.assertTrue(program.metadata.config_file.exists())
+        self.assertTrue(program.mbed_os.root.exists())
+        self.assertIsNotNone(program.repo)
 
 
 class TestLibReferenceHandling(TestCase):
