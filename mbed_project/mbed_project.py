@@ -5,9 +5,9 @@
 """Defines the public API of the package."""
 import pathlib
 
-from typing import List
+import click
 
-from mbed_project.mbed_program import MbedProgram
+from mbed_project.mbed_program import MbedProgram, parse_url
 
 
 def clone_project(url: str, recursive: bool = False) -> None:
@@ -17,7 +17,14 @@ def clone_project(url: str, recursive: bool = False) -> None:
         url: URL of the repository to clone.
         recursive: Recursively clone all project dependencies.
     """
-    pass
+    git_data = parse_url(url)
+    url = git_data["url"]
+    dst_path = pathlib.Path(git_data["dst_path"])
+    click.echo(f"Cloning Mbed program from '{url}'")
+    program = MbedProgram.from_remote_url(url, dst_path)
+    if recursive:
+        click.echo("Resolving program library dependencies.")
+        program.resolve_libraries()
 
 
 def initialise_project(path: pathlib.Path, create_only: bool) -> None:
@@ -32,7 +39,7 @@ def initialise_project(path: pathlib.Path, create_only: bool) -> None:
         program.resolve_libraries()
 
 
-def checkout_project_revision(path: pathlib.Path, project_revision: str, force: bool = False) -> None:
+def checkout_project_revision(path: pathlib.Path, force: bool = False) -> None:
     """Checkout a specific revision of the current Mbed project.
 
     This function also resolves and syncs all library dependencies to the revision specified in the library reference
@@ -44,10 +51,15 @@ def checkout_project_revision(path: pathlib.Path, project_revision: str, force: 
         force: Force overwrite uncommitted changes. If False, the checkout will fail if there are uncommitted local
                changes.
     """
-    pass
+    program = MbedProgram.from_existing_local_program_directory(path)
+    click.echo("Checking out all libraries to revisions specified in .lib files")
+    program.checkout_libraries()
+    if program.has_unresolved_libraries():
+        click.echo("Unresolved libraries detected. Downloading library source code.")
+        program.resolve_libraries()
 
 
-def get_libs(path: pathlib.Path) -> List[str]:
+def print_libs(path: pathlib.Path) -> None:
     """List all resolved library dependencies.
 
     This function will not resolve dependencies. This will only generate a list of resolved dependencies.
@@ -55,4 +67,8 @@ def get_libs(path: pathlib.Path) -> List[str]:
     Args:
         path: Path to the Mbed project.
     """
-    return [""]
+    program = MbedProgram.from_existing_local_program_directory(path)
+    click.echo("This program has the following library dependencies: ")
+    click.echo("\n".join(sorted(program.list_known_library_dependencies())))
+    if program.has_unresolved_libraries():
+        click.echo("Unresolved libraries detected. Please run the `checkout` command to download library source code.")

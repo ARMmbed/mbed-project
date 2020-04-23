@@ -8,7 +8,7 @@ import pathlib
 
 import click
 
-from mbed_project import initialise_project, clone_project, get_libs, checkout_project_revision
+from mbed_project import initialise_project, clone_project, print_libs, checkout_project_revision
 
 
 @click.command()
@@ -27,12 +27,19 @@ def init(path: str, create_only: bool) -> None:
 
 @click.command()
 @click.argument("url")
-def clone(url: str) -> None:
+@click.option(
+    "--recursive",
+    "-r",
+    is_flag=True,
+    show_default=True,
+    help="Resolve all library dependencies after cloning the program..",
+)
+def clone(url: str, recursive: bool) -> None:
     """Clone an Mbed project and library dependencies.
 
     URL: The git url of the remote project to clone.
     """
-    clone_project(url)
+    clone_project(url, recursive)
 
 
 @click.command()
@@ -42,16 +49,15 @@ def libs(path: str) -> None:
 
     PATH: Path to the Mbed project [default: CWD]
     """
-    get_libs(pathlib.Path(path))
+    print_libs(pathlib.Path(path))
 
 
 @click.command()
 @click.argument("path", type=click.Path(), default=os.getcwd())
-@click.argument("revision", default="latest")
 @click.option(
     "--force", "-f", is_flag=True, show_default=True, help="Force checkout, overwrites local uncommitted changes."
 )
-def checkout(path: str, revision: str, force: bool) -> None:
+def checkout(path: str, force: bool) -> None:
     """Checks out an Mbed project at the specified revision.
 
     Ensures all dependencies are resolved and the versions are synchronised to the version specified in the library
@@ -61,4 +67,4 @@ def checkout(path: str, revision: str, force: bool) -> None:
 
     REVISION: The revision of the Mbed project to check out.
     """
-    checkout_project_revision(pathlib.Path(path), revision, force)
+    checkout_project_revision(pathlib.Path(path), force)
