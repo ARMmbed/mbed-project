@@ -15,7 +15,7 @@ class TestLibraryReferences(TestCase):
     @patchfs
     def test_hydrates_top_level_library_references(self, mock_clone, fs):
         fs_root = pathlib.Path(fs, "foo")
-        lib = make_mbed_lib_reference(fs_root, fs, ref_url="https://git")
+        lib = make_mbed_lib_reference(fs_root, ref_url="https://git")
         mock_clone.side_effect = lambda url, dst_dir: dst_dir.mkdir()
 
         lib_refs = LibraryReferences(fs_root, ignore_paths=[fs_root / "mbed-os"])
@@ -27,7 +27,7 @@ class TestLibraryReferences(TestCase):
     @patchfs
     def test_hydrates_recursive_dependencies(self, mock_clone, fs):
         fs_root = pathlib.Path(fs, "foo")
-        lib = make_mbed_lib_reference(fs_root, fs, ref_url="https://git")
+        lib = make_mbed_lib_reference(fs_root, ref_url="https://git")
         # Create a lib reference without touching the fs at this point, we want to mock the effects of a recursive
         # reference lookup and we need to assert the reference was resolved.
         lib2 = MbedLibReference(
@@ -36,7 +36,7 @@ class TestLibraryReferences(TestCase):
         # Here we mock the effects of a recursive reference lookup. We create a new lib reference as a side effect of
         # the first call to the mock. Then we create the src dir, thus resolving the lib, on the second call.
         mock_clone.side_effect = lambda url, dst_dir: (
-            make_mbed_lib_reference(pathlib.Path(dst_dir), fs, name=lib2.reference_file.name, ref_url="https://valid2"),
+            make_mbed_lib_reference(pathlib.Path(dst_dir), name=lib2.reference_file.name, ref_url="https://valid2"),
             lib2.source_code_path.mkdir(),
         )
 
@@ -51,7 +51,7 @@ class TestLibraryReferences(TestCase):
     @mock.patch("mbed_project._internal.git_utils.init", autospec=True)
     def test_does_not_perform_checkout_if_no_git_ref_exists(self, mock_init, mock_checkout, mock_clone, fs):
         fs_root = pathlib.Path(fs, "foo")
-        make_mbed_lib_reference(fs_root, fs, ref_url="https://git", resolved=True)
+        make_mbed_lib_reference(fs_root, ref_url="https://git", resolved=True)
 
         lib_refs = LibraryReferences(fs_root, ignore_paths=[fs_root / "mbed-os"])
         lib_refs.checkout(force=False)
@@ -63,7 +63,7 @@ class TestLibraryReferences(TestCase):
     @mock.patch("mbed_project._internal.git_utils.init", autospec=True)
     def test_performs_checkout_if_git_ref_exists(self, mock_init, mock_checkout, mock_clone, fs):
         fs_root = pathlib.Path(fs, "foo")
-        lib = make_mbed_lib_reference(fs_root, fs, ref_url="https://git#lajdhalk234", resolved=True)
+        lib = make_mbed_lib_reference(fs_root, ref_url="https://git#lajdhalk234", resolved=True)
 
         lib_refs = LibraryReferences(fs_root, ignore_paths=[fs_root / "mbed-os"])
         lib_refs.checkout(force=False)
@@ -75,7 +75,7 @@ class TestLibraryReferences(TestCase):
     @mock.patch("mbed_project._internal.git_utils.init", autospec=True)
     def test_resolve_does_not_perform_checkout_if_no_git_ref_exists(self, mock_init, mock_checkout, mock_clone, fs):
         fs_root = pathlib.Path(fs, "foo")
-        make_mbed_lib_reference(fs_root, fs, ref_url="https://git")
+        make_mbed_lib_reference(fs_root, ref_url="https://git")
         mock_clone.side_effect = lambda url, dst_dir: dst_dir.mkdir()
 
         lib_refs = LibraryReferences(fs_root, ignore_paths=[fs_root / "mbed-os"])
@@ -88,7 +88,7 @@ class TestLibraryReferences(TestCase):
     @mock.patch("mbed_project._internal.git_utils.init", autospec=True)
     def test_resolve_performs_checkout_if_git_ref_exists(self, mock_init, mock_checkout, mock_clone, fs):
         fs_root = pathlib.Path(fs, "foo")
-        lib = make_mbed_lib_reference(fs_root, fs, ref_url="https://git#lajdhalk234")
+        lib = make_mbed_lib_reference(fs_root, ref_url="https://git#lajdhalk234")
         mock_clone.side_effect = lambda url, dst_dir: dst_dir.mkdir()
 
         lib_refs = LibraryReferences(fs_root, ignore_paths=[fs_root / "mbed-os"])

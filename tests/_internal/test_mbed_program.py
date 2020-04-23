@@ -39,7 +39,7 @@ class TestInitialiseProgram(TestCase):
     @patchfs
     def test_from_url_raises_if_dest_dir_contains_program(self, fs):
         fs_root = pathlib.Path(fs, "foo")
-        make_mbed_program_files(fs_root, fs)
+        make_mbed_program_files(fs_root)
         url = "https://valid"
 
         with self.assertRaises(ExistingProgram):
@@ -61,7 +61,7 @@ class TestInitialiseProgram(TestCase):
     def test_from_url_returns_valid_program(self, mock_clone, fs):
         fs_root = pathlib.Path(fs, "foo")
         url = "https://valid"
-        mock_clone.side_effect = lambda *args: make_mbed_program_files(fs_root, fs)
+        mock_clone.side_effect = lambda *args: make_mbed_program_files(fs_root)
         program = MbedProgram.from_remote_url(url, fs_root)
 
         self.assertEqual(program.metadata, MbedProgramData.from_existing(fs_root))
@@ -80,8 +80,8 @@ class TestInitialiseProgram(TestCase):
     @mock.patch("mbed_project._internal.git_utils.git.Repo", autospec=True)
     def test_from_existing_returns_valid_program(self, mock_repo, fs):
         fs_root = pathlib.Path(fs, "foo")
-        make_mbed_program_files(fs_root, fs)
-        make_mbed_os_files(fs_root / "mbed-os", fs)
+        make_mbed_program_files(fs_root)
+        make_mbed_os_files(fs_root / "mbed-os")
 
         program = MbedProgram.from_existing_local_program_directory(fs_root)
 
@@ -109,9 +109,9 @@ class TestLibReferenceHandling(TestCase):
     @patchfs
     def test_lists_all_known_libraries(self, fs):
         root = pathlib.Path(fs, "root")
-        lib_ref = make_mbed_lib_reference(root, fs, resolved=True, ref_url="https://blah")
+        lib_ref = make_mbed_lib_reference(root, resolved=True, ref_url="https://blah")
         lib_ref_unresolved = make_mbed_lib_reference(
-            root, fs, name="my-unresolved-lib.lib", resolved=False, ref_url="https://blah"
+            root, name="my-unresolved-lib.lib", resolved=False, ref_url="https://blah"
         )
         mbed_os_root = root / "mbed-os"
         mbed_os_root.mkdir()
@@ -126,8 +126,8 @@ class TestLibReferenceHandling(TestCase):
     @patchfs
     def test_checks_for_unresolved_libraries(self, fs):
         root = pathlib.Path(fs, "root")
-        make_mbed_lib_reference(root, fs, resolved=True, ref_url="https://blah")
-        make_mbed_lib_reference(root, fs, name="my-unresolved-lib.lib", resolved=False, ref_url="https://blah")
+        make_mbed_lib_reference(root, resolved=True, ref_url="https://blah")
+        make_mbed_lib_reference(root, name="my-unresolved-lib.lib", resolved=False, ref_url="https://blah")
         mbed_os_root = root / "mbed-os"
         mbed_os_root.mkdir()
 
@@ -158,7 +158,7 @@ class TestFindProgramRoot(TestCase):
     def test_finds_program_higher_in_dir_tree(self, fs):
         program_root = pathlib.Path(fs, "foo")
         pwd = program_root / "subprojfoo" / "libbar"
-        make_mbed_program_files(program_root, fs)
+        make_mbed_program_files(program_root)
         pwd.mkdir(parents=True)
 
         self.assertEqual(_find_program_root(pwd), program_root.resolve())
@@ -166,7 +166,7 @@ class TestFindProgramRoot(TestCase):
     @patchfs
     def test_finds_program_at_current_path(self, fs):
         program_root = pathlib.Path(fs, "foo")
-        make_mbed_program_files(program_root, fs)
+        make_mbed_program_files(program_root)
 
         self.assertEqual(_find_program_root(program_root), program_root.resolve())
 

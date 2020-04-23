@@ -15,7 +15,7 @@ class TestMbedProgramData(TestCase):
     @patchfs
     def test_from_new_raises_if_program_already_exists(self, fs):
         root = pathlib.Path(fs, "foo")
-        make_mbed_program_files(root, fs)
+        make_mbed_program_files(root)
 
         with self.assertRaises(ValueError):
             MbedProgramData.from_new(root)
@@ -40,7 +40,7 @@ class TestMbedProgramData(TestCase):
     @patchfs
     def test_from_existing_finds_existing_program_data(self, fs):
         root = pathlib.Path(fs, "foo")
-        make_mbed_program_files(root, fs)
+        make_mbed_program_files(root)
 
         program = MbedProgramData.from_existing(root)
 
@@ -51,14 +51,14 @@ class TestMbedLibReference(TestCase):
     @patchfs
     def test_is_resolved_returns_true_if_source_code_dir_exists(self, fs):
         root = pathlib.Path(fs, "foo")
-        lib = make_mbed_lib_reference(root, fs, resolved=True)
+        lib = make_mbed_lib_reference(root, resolved=True)
 
         self.assertTrue(lib.is_resolved())
 
     @patchfs
     def test_is_resolved_returns_false_if_source_code_dir_doesnt_exist(self, fs):
         root = pathlib.Path(fs, "foo")
-        lib = make_mbed_lib_reference(root, fs)
+        lib = make_mbed_lib_reference(root)
 
         self.assertFalse(lib.is_resolved())
 
@@ -68,7 +68,8 @@ class TestMbedLibReference(TestCase):
         url = "https://github.com/mylibrepo"
         ref = "latest"
         full_ref = f"{url}#{ref}"
-        lib = make_mbed_lib_reference(root, fs, ref_url=full_ref)
+        lib = make_mbed_lib_reference(root, ref_url=full_ref)
+
         reference = lib.get_git_reference()
 
         self.assertEqual(reference.repo_url, url)
@@ -79,7 +80,7 @@ class TestMbedOS(TestCase):
     @patchfs
     def test_from_existing_finds_existing_mbed_os_data(self, fs):
         root_path = pathlib.Path(fs, "my-version-of-mbed-os")
-        make_mbed_os_files(root_path, fs)
+        make_mbed_os_files(root_path)
 
         mbed_os = MbedOS.from_existing(root_path)
 

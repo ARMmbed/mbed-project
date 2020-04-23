@@ -16,7 +16,7 @@ def patchfs(func):
     return wrapper
 
 
-def make_mbed_program_files(root, fs, config_file_name="mbed_app.json"):
+def make_mbed_program_files(root, config_file_name="mbed_app.json"):
     if not root.exists():
         root.mkdir()
 
@@ -25,7 +25,7 @@ def make_mbed_program_files(root, fs, config_file_name="mbed_app.json"):
     (root / config_file_name).touch()
 
 
-def make_mbed_lib_reference(root, fs, name="mylib.lib", resolved=False, ref_url=None):
+def make_mbed_lib_reference(root, name="mylib.lib", resolved=False, ref_url=None):
     ref_file = root / name
     source_dir = ref_file.with_suffix("")
     if not root.exists():
@@ -42,7 +42,7 @@ def make_mbed_lib_reference(root, fs, name="mylib.lib", resolved=False, ref_url=
     return MbedLibReference(reference_file=ref_file, source_code_path=source_dir)
 
 
-def make_mbed_os_files(root, fs):
+def make_mbed_os_files(root):
     if not root.exists():
         root.mkdir()
 
