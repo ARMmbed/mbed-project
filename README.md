@@ -1,10 +1,7 @@
-# Mbed Project
+# Package: mbed-project
 
-![Package](https://img.shields.io/badge/Package-mbed--project-lightgrey)
 [![Documentation](https://img.shields.io/badge/Documentation-GitHub_Pages-blue)](https://armmbed.github.io/mbed-project)
-[![PyPI](https://img.shields.io/pypi/v/mbed-project)](https://pypi.org/project/mbed-project/)
-[![PyPI - Status](https://img.shields.io/pypi/status/mbed-project)](https://pypi.org/project/mbed-project/)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/mbed-project)](https://pypi.org/project/mbed-project/)
+[![PyPI version](https://badge.fury.io/py/mbed-project.svg)](https://badge.fury.io/py/mbed-project)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/ARMmbed/mbed-project/blob/master/LICENSE)
 
 [![Build Status](https://dev.azure.com/mbed-tools/mbed-project/_apis/build/status/Build%20and%20Release?branchName=master&stageName=CI%20Checkpoint)](https://dev.azure.com/mbed-tools/mbed-project/_build/latest?definitionId=14&branchName=master)
