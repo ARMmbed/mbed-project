@@ -7,16 +7,14 @@ import pathlib
 from unittest import TestCase, mock
 
 from mbed_project._internal.libraries import MbedLibReference, LibraryReferences
-from tests.factories import make_mbed_os_files, make_mbed_program_files, make_mbed_lib_reference, patchfs
+from tests.factories import make_mbed_lib_reference, patchfs
 
 
 @mock.patch("mbed_project._internal.git_utils.clone", autospec=True)
-class TestMbedProgramLibraryHandling(TestCase):
+class TestLibraryReferences(TestCase):
     @patchfs
     def test_hydrates_top_level_library_references(self, mock_clone, fs):
         fs_root = pathlib.Path(fs, "foo")
-        make_mbed_program_files(fs_root, fs)
-        make_mbed_os_files(fs_root / "mbed-os", fs)
         lib = make_mbed_lib_reference(fs_root, fs, ref_url="https://git")
         mock_clone.side_effect = lambda url, dst_dir: dst_dir.mkdir()
 
@@ -29,8 +27,6 @@ class TestMbedProgramLibraryHandling(TestCase):
     @patchfs
     def test_hydrates_recursive_dependencies(self, mock_clone, fs):
         fs_root = pathlib.Path(fs, "foo")
-        make_mbed_program_files(fs_root, fs)
-        make_mbed_os_files(fs_root / "mbed-os", fs)
         lib = make_mbed_lib_reference(fs_root, fs, ref_url="https://git")
         # Create a lib reference without touching the fs at this point, we want to mock the effects of a recursive
         # reference lookup and we need to assert the reference was resolved.
@@ -49,3 +45,53 @@ class TestMbedProgramLibraryHandling(TestCase):
 
         self.assertTrue(lib.is_resolved())
         self.assertTrue(lib2.is_resolved())
+
+    @patchfs
+    @mock.patch("mbed_project._internal.git_utils.checkout", autospec=True)
+    @mock.patch("mbed_project._internal.git_utils.init", autospec=True)
+    def test_does_not_perform_checkout_if_no_git_ref_exists(self, mock_init, mock_checkout, mock_clone, fs):
+        fs_root = pathlib.Path(fs, "foo")
+        make_mbed_lib_reference(fs_root, fs, ref_url="https://git", resolved=True)
+
+        lib_refs = LibraryReferences(fs_root, ignore_paths=[fs_root / "mbed-os"])
+        lib_refs.checkout(force=False)
+
+        mock_checkout.assert_not_called()
+
+    @patchfs
+    @mock.patch("mbed_project._internal.git_utils.checkout", autospec=True)
+    @mock.patch("mbed_project._internal.git_utils.init", autospec=True)
+    def test_performs_checkout_if_git_ref_exists(self, mock_init, mock_checkout, mock_clone, fs):
+        fs_root = pathlib.Path(fs, "foo")
+        lib = make_mbed_lib_reference(fs_root, fs, ref_url="https://git#lajdhalk234", resolved=True)
+
+        lib_refs = LibraryReferences(fs_root, ignore_paths=[fs_root / "mbed-os"])
+        lib_refs.checkout(force=False)
+
+        mock_checkout.assert_called_once_with(mock_init.return_value, lib.get_git_reference().ref, force=False)
+
+    @patchfs
+    @mock.patch("mbed_project._internal.git_utils.checkout", autospec=True)
+    @mock.patch("mbed_project._internal.git_utils.init", autospec=True)
+    def test_resolve_does_not_perform_checkout_if_no_git_ref_exists(self, mock_init, mock_checkout, mock_clone, fs):
+        fs_root = pathlib.Path(fs, "foo")
+        make_mbed_lib_reference(fs_root, fs, ref_url="https://git")
+        mock_clone.side_effect = lambda url, dst_dir: dst_dir.mkdir()
+
+        lib_refs = LibraryReferences(fs_root, ignore_paths=[fs_root / "mbed-os"])
+        lib_refs.resolve()
+
+        mock_checkout.assert_not_called()
+
+    @patchfs
+    @mock.patch("mbed_project._internal.git_utils.checkout", autospec=True)
+    @mock.patch("mbed_project._internal.git_utils.init", autospec=True)
+    def test_resolve_performs_checkout_if_git_ref_exists(self, mock_init, mock_checkout, mock_clone, fs):
+        fs_root = pathlib.Path(fs, "foo")
+        lib = make_mbed_lib_reference(fs_root, fs, ref_url="https://git#lajdhalk234")
+        mock_clone.side_effect = lambda url, dst_dir: dst_dir.mkdir()
+
+        lib_refs = LibraryReferences(fs_root, ignore_paths=[fs_root / "mbed-os"])
+        lib_refs.resolve()
+
+        mock_checkout.assert_called_once_with(None, lib.get_git_reference().ref)

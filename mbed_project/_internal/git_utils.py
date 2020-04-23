@@ -41,12 +41,12 @@ def clone(url: str, dst_dir: Path) -> git.Repo:
         raise VersionControlError(f"Cloning git repository from url '{url}' failed. Error from VCS: {err.stderr}")
 
 
-def checkout(repo: git.Repo, ref: str) -> None:
-    """Check out the at specific reference in the given repository.
+def checkout(repo: git.Repo, ref: str, force: bool = False) -> None:
+    """Check out a specific reference in the given repository.
 
     Args:
         repo: git.Repo object where the checkout will be performed.
-        ref: Git commit hash, branch or tag reference.
+        ref: Git commit hash, branch or tag reference, must be a valid ref defined in the repo.
 
     Raises:
         VersionControlError: Check out failed.
@@ -54,7 +54,7 @@ def checkout(repo: git.Repo, ref: str) -> None:
     git_object = git.repo.fun.name_to_object(repo, ref)
     commit = git.repo.fun.to_commit(git_object)
     try:
-        repo.git.checkout(str(commit))
+        repo.git.checkout(f"--force {commit}" if force else str(commit))
     except git.exc.GitCommandError as err:
         raise VersionControlError(f"Failed to check out revision '{commit}'. Error from VCS: {err.stderr}")
 

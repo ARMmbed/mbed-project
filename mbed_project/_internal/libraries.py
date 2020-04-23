@@ -66,13 +66,13 @@ class LibraryReferences:
         if list(self.iter_unresolved()):
             self.resolve()
 
-    def checkout(self) -> None:
+    def checkout(self, force: bool) -> None:
         """Check out all resolved libs to revision specified in .lib files."""
         for lib in self.iter_resolved():
             repo = git_utils.init(lib.source_code_path)
             git_ref = lib.get_git_reference()
             if git_ref.ref:
-                git_utils.checkout(repo, git_ref.ref)
+                git_utils.checkout(repo, git_ref.ref, force=force)
 
     def iter_all(self) -> Generator[MbedLibReference, None, None]:
         """Iterate all library references in the tree.

@@ -53,7 +53,7 @@ def checkout_project_revision(path: pathlib.Path, force: bool = False) -> None:
     """
     program = MbedProgram.from_existing_local_program_directory(path)
     click.echo("Checking out all libraries to revisions specified in .lib files")
-    program.checkout_libraries()
+    program.checkout_libraries(force=force)
     if program.has_unresolved_libraries():
         click.echo("Unresolved libraries detected. Downloading library source code.")
         program.resolve_libraries()

@@ -123,9 +123,9 @@ class MbedProgram:
         """Resolve all external dependencies defined in .lib files."""
         self.lib_references.resolve()
 
-    def checkout_libraries(self) -> None:
+    def checkout_libraries(self, force: bool = False) -> None:
         """Check out all resolved libraries to revisions specified in .lib files."""
-        self.lib_references.checkout()
+        self.lib_references.checkout(force)
 
     def list_known_library_dependencies(self) -> List[str]:
         """Returns a list of all known library dependencies."""
