@@ -6,6 +6,8 @@
 import os
 import pathlib
 
+from typing import Any
+
 import click
 
 from mbed_project import initialise_project, clone_project, list_libs, checkout_project_revision
@@ -36,7 +38,7 @@ def init(path: str, create_only: bool) -> None:
     show_default=True,
     help="Skip resolving program library dependencies after cloning.",
 )
-def clone(url: str, path: str, skip_resolve_libs: bool) -> None:
+def clone(url: str, path: Any, skip_resolve_libs: bool) -> None:
     """Clone an Mbed project and library dependencies.
 
     URL: The git url of the remote project to clone.
@@ -85,4 +87,3 @@ def checkout(path: str, force: bool) -> None:
     """
     click.echo("Checking out all libraries to revisions specified in .lib files. Resolving any unresolved libraries.")
     checkout_project_revision(pathlib.Path(path), force)
-

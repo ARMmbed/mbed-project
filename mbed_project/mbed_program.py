@@ -129,7 +129,10 @@ class MbedProgram:
 
     def list_known_library_dependencies(self) -> List[str]:
         """Returns a list of all known library dependencies."""
-        return [f"Library: {lib.get_git_reference().repo_url}, revision: {lib.get_git_reference().ref}" for lib in self.lib_references.iter_all()]
+        return [
+            f"Library: {lib.get_git_reference().repo_url}, revision: {lib.get_git_reference().ref}"
+            for lib in self.lib_references.iter_all()
+        ]
 
     def has_unresolved_libraries(self) -> bool:
         """Checks if any unresolved library dependencies exist in the program tree."""
