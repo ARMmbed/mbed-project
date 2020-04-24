@@ -103,7 +103,7 @@ class MbedProgramData:
 
         mbed_file.touch()
         config.touch()
-        mbed_os_ref.write_text(MBED_OS_REFERENCE_URL)
+        mbed_os_ref.write_text(f"{MBED_OS_REFERENCE_URL}#master")
         return cls(config_file=config, mbed_file=mbed_file, mbed_os_ref=mbed_os_ref)
 
     @classmethod
