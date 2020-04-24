@@ -6,7 +6,7 @@ import pathlib
 
 from unittest import TestCase, mock
 
-from mbed_project import initialise_project, clone_project, checkout_project_revision, print_libs
+from mbed_project import initialise_project, clone_project, checkout_project_revision, list_libs
 
 
 @mock.patch("mbed_project.mbed_project.MbedProgram", autospec=True)
@@ -64,7 +64,7 @@ class TestCheckoutProject(TestCase):
 class TestPrintLibs(TestCase):
     def test_list_libraries_called(self, mock_program):
         path = pathlib.Path("somewhere")
-        print_libs(path)
+        list_libs(path)
 
         mock_program.from_existing_local_program_directory.assert_called_once_with(path)
         mock_program.from_existing_local_program_directory.return_value.list_known_library_dependencies.assert_called()

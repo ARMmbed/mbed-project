@@ -4,11 +4,13 @@
 #
 """Defines the public API of the package."""
 import pathlib
+import logging
 
-import click
+from typing import Dict, Any
 
 from mbed_project.mbed_program import MbedProgram, parse_url
 
+logger = logging.getLogger(__name__)
 
 def clone_project(url: str, recursive: bool = False) -> None:
     """Clones an Mbed project from a remote repository.
@@ -20,10 +22,8 @@ def clone_project(url: str, recursive: bool = False) -> None:
     git_data = parse_url(url)
     url = git_data["url"]
     dst_path = pathlib.Path(git_data["dst_path"])
-    click.echo(f"Cloning Mbed program from '{url}'")
     program = MbedProgram.from_remote_url(url, dst_path)
     if recursive:
-        click.echo("Resolving program library dependencies.")
         program.resolve_libraries()
 
 
@@ -52,14 +52,13 @@ def checkout_project_revision(path: pathlib.Path, force: bool = False) -> None:
                changes.
     """
     program = MbedProgram.from_existing_local_program_directory(path)
-    click.echo("Checking out all libraries to revisions specified in .lib files")
     program.checkout_libraries(force=force)
     if program.has_unresolved_libraries():
-        click.echo("Unresolved libraries detected. Downloading library source code.")
+        logger.info("Unresolved libraries detected, downloading library source code.")
         program.resolve_libraries()
 
 
-def print_libs(path: pathlib.Path) -> None:
+def list_libs(path: pathlib.Path) -> Dict[str, Any]:
     """List all resolved library dependencies.
 
     This function will not resolve dependencies. This will only generate a list of resolved dependencies.
@@ -68,7 +67,4 @@ def print_libs(path: pathlib.Path) -> None:
         path: Path to the Mbed project.
     """
     program = MbedProgram.from_existing_local_program_directory(path)
-    click.echo("This program has the following library dependencies: ")
-    click.echo("\n".join(sorted(program.list_known_library_dependencies())))
-    if program.has_unresolved_libraries():
-        click.echo("Unresolved libraries detected. Please run the `checkout` command to download library source code.")
+    return {"known_libs": program.list_known_library_dependencies(), "unresolved": program.has_unresolved_libraries()}

@@ -8,7 +8,7 @@ import pathlib
 
 import click
 
-from mbed_project import initialise_project, clone_project, print_libs, checkout_project_revision
+from mbed_project import initialise_project, clone_project, list_libs, checkout_project_revision
 
 
 @click.command()
@@ -22,6 +22,7 @@ def init(path: str, create_only: bool) -> None:
     click.echo(f"Creating a new Mbed program at path '{path}'.")
     if not create_only:
         click.echo("Downloading mbed-os and adding it to the project.")
+
     initialise_project(pathlib.Path(path), create_only)
 
 
@@ -39,6 +40,10 @@ def clone(url: str, recursive: bool) -> None:
 
     URL: The git url of the remote project to clone.
     """
+    click.echo(f"Cloning Mbed program '{url}'")
+    if recursive:
+        click.echo("Resolving program library dependencies.")
+
     clone_project(url, recursive)
 
 
@@ -49,7 +54,11 @@ def libs(path: str) -> None:
 
     PATH: Path to the Mbed project [default: CWD]
     """
-    print_libs(pathlib.Path(path))
+    lib_data = list_libs(pathlib.Path(path))
+    click.echo("This program has the following library dependencies: ")
+    click.echo("\n".join(sorted(lib_data["known_libs"])))
+    if lib_data["unresolved"]:
+        click.echo("Unresolved libraries detected. Please run the `checkout` command to download library source code.")
 
 
 @click.command()
@@ -67,4 +76,6 @@ def checkout(path: str, force: bool) -> None:
 
     REVISION: The revision of the Mbed project to check out.
     """
+    click.echo("Checking out all libraries to revisions specified in .lib files. Resolving any unresolved libraries.")
     checkout_project_revision(pathlib.Path(path), force)
+
