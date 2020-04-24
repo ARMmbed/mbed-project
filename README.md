@@ -1,4 +1,4 @@
-# Package: Mbed Project
+# Mbed Project
 
 ![Package](https://badgen.net/badge/Package/mbed-project/grey)
 [![Documentation](https://badgen.net/badge/Documentation/GitHub%20Pages/blue?icon=github)](https://armmbed.github.io/mbed-project)
