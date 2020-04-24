@@ -30,13 +30,13 @@ def init(path: str, create_only: bool) -> None:
 @click.argument("url")
 @click.argument("path", type=click.Path(), default="")
 @click.option(
-    "--recursive",
-    "-r",
+    "--skip-resolve-libs",
+    "-s",
     is_flag=True,
     show_default=True,
-    help="Resolve all library dependencies after cloning the program.",
+    help="Skip resolving program library dependencies after cloning.",
 )
-def clone(url: str, path: str, recursive: bool) -> None:
+def clone(url: str, path: str, skip_resolve_libs: bool) -> None:
     """Clone an Mbed project and library dependencies.
 
     URL: The git url of the remote project to clone.
@@ -44,14 +44,14 @@ def clone(url: str, path: str, recursive: bool) -> None:
     PATH: Destination path for the clone. If not given the destination path is set to the project name in the cwd.
     """
     click.echo(f"Cloning Mbed program '{url}'")
-    if recursive:
+    if not skip_resolve_libs:
         click.echo("Resolving program library dependencies.")
 
     if path:
         click.echo(f"Destination path is '{path}'")
         path = pathlib.Path(path)
 
-    clone_project(url, path, recursive)
+    clone_project(url, path, not skip_resolve_libs)
 
 
 @click.command()
