@@ -6,13 +6,13 @@
 import pathlib
 import logging
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from mbed_project.mbed_program import MbedProgram, parse_url
 
 logger = logging.getLogger(__name__)
 
-def clone_project(url: str, recursive: bool = False) -> None:
+def clone_project(url: str, dst_path: Optional[pathlib.Path] = None, recursive: bool = False) -> None:
     """Clones an Mbed project from a remote repository.
 
     Args:
@@ -21,7 +21,9 @@ def clone_project(url: str, recursive: bool = False) -> None:
     """
     git_data = parse_url(url)
     url = git_data["url"]
-    dst_path = pathlib.Path(git_data["dst_path"])
+    if not dst_path:
+        dst_path = pathlib.Path(git_data["dst_path"])
+
     program = MbedProgram.from_remote_url(url, dst_path)
     if recursive:
         program.resolve_libraries()

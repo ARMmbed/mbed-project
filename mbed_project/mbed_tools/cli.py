@@ -28,23 +28,30 @@ def init(path: str, create_only: bool) -> None:
 
 @click.command()
 @click.argument("url")
+@click.argument("path", type=click.Path(), default="")
 @click.option(
     "--recursive",
     "-r",
     is_flag=True,
     show_default=True,
-    help="Resolve all library dependencies after cloning the program..",
+    help="Resolve all library dependencies after cloning the program.",
 )
-def clone(url: str, recursive: bool) -> None:
+def clone(url: str, path: str, recursive: bool) -> None:
     """Clone an Mbed project and library dependencies.
 
     URL: The git url of the remote project to clone.
+
+    PATH: Destination path for the clone. If not given the destination path is set to the project name in the cwd.
     """
     click.echo(f"Cloning Mbed program '{url}'")
     if recursive:
         click.echo("Resolving program library dependencies.")
 
-    clone_project(url, recursive)
+    if path:
+        click.echo(f"Destination path is '{path}'")
+        path = pathlib.Path(path)
+
+    clone_project(url, path, recursive)
 
 
 @click.command()

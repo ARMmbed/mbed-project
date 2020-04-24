@@ -29,8 +29,8 @@ class TestInitCommand(TestCase):
 @mock.patch("mbed_project.mbed_tools.cli.clone_project", autospec=True)
 class TestCloneCommand(TestCase):
     def test_calls_clone_function_with_correct_args(self, mocked_clone_project):
-        CliRunner().invoke(clone, ["url"])
-        mocked_clone_project.assert_called_once_with("url", False)
+        CliRunner().invoke(clone, ["url", "dst"])
+        mocked_clone_project.assert_called_once_with("url", pathlib.Path("dst"), False)
 
 
 @mock.patch("mbed_project.mbed_tools.cli.list_libs", autospec=True)
