@@ -74,7 +74,7 @@ def libs(path: str) -> None:
     "--force", "-f", is_flag=True, show_default=True, help="Force checkout, overwrites local uncommitted changes."
 )
 def checkout(path: str, force: bool) -> None:
-    """Checks out an Mbed project at the specified revision.
+    """Checks out Mbed program library dependencies at the revision specified in the ".lib" files.
 
     Ensures all dependencies are resolved and the versions are synchronised to the version specified in the library
     reference.
