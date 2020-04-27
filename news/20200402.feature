@@ -1,1 +1,0 @@
-Add MbedOS metadata class

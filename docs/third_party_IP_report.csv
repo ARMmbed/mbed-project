@@ -1,0 +1,10 @@
+Compliance, Name,Is a dependency?,URL,Licence,Details
+True,Click,True,https://palletsprojects.com/p/click/,0BSD,Licence is compliant.
+True,gitdb,True,https://github.com/gitpython-developers/gitdb,0BSD,Licence is compliant.
+True,GitPython,True,https://github.com/gitpython-developers/GitPython,Unknown,Package's licence manually checked: BSD-3-Clause
+True,mbed-project,False,https://github.com/ARMmbed/mbed-project,Apache-2.0,Licence is compliant.
+True,mbed-tools-lib,True,https://github.com/ARMmbed/mbed-tools-lib,Apache-2.0,Licence is compliant.
+True,python-dotenv,True,http://github.com/theskumar/python-dotenv,Unknown,Package's licence manually checked: BSD-3-Clause
+True,smmap,True,https://github.com/gitpython-developers/smmap,0BSD,Licence is compliant.
+True,tabulate,True,https://github.com/astanin/python-tabulate,MIT,Licence is compliant.
+True,tqdm,True,https://github.com/tqdm/tqdm,MPL-2.0,Licence is compliant.

@@ -11,3 +11,43 @@ beta releases are not included in this history. For a full list of all releases,
 [PyPI Release History](https://pypi.org/project/mbed-project/#history).
 
 [//]: # (begin_release_notes)
+
+"1.0.0" (2020-04-27)
+====================
+
+Major changes
+-------------
+
+- Initial release. (#1)
+
+
+Features
+--------
+
+- Add mbed-tools integration (#20200326)
+- Add MbedProgram and metadata classes (#20200330)
+- Add MbedOS metadata class (#20200402)
+- Add library reference handling (#20200408)
+- Implement init command (#20200416)
+- Implement project commands (#20200423)
+- Manually checked unknown third party licences (#20200427)
+
+
+Bugfixes
+--------
+
+- Fix relative path to MbedOS (#20200403)
+- Add missing git-python dependency (#20200407)
+- Fixed the git library dependency (#20200427)
+
+
+Improved Documentation
+----------------------
+
+- Added licence notice. (#20200326)
+
+
+Misc
+----
+
+- #20200326, #20200402, #20200420, #20200422, #20200423, #2020040201
