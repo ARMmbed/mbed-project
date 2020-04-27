@@ -43,7 +43,7 @@ setup(
         "Click==7.0",
         "dataclasses; python_version<'3.7'",
         "mbed-tools-lib~=1.2",
-        "git-python",
+        "GitPython",
         "tqdm",
     ],
     license="Apache 2.0",
