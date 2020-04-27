@@ -32,11 +32,12 @@ setup(
         "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Software Development :: Build Tools",
         "Topic :: Software Development :: Embedded Systems",
     ],
     description="Project and library management for Mbed OS",
-    keywords="Arm Mbed OS MbedOS Arm Mbed OS MbedOS Arm Mbed OS MbedOS project library",
+    keywords="Arm Mbed OS MbedOS project library",
     include_package_data=True,
     install_requires=[
         "python-dotenv",
