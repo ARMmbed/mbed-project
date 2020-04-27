@@ -43,6 +43,7 @@ setup(
         "python-dotenv",
         "Click==7.0",
         "dataclasses; python_version<'3.7'",
+        "tabulate",
         "mbed-tools-lib~=1.2",
         "GitPython",
         "tqdm",

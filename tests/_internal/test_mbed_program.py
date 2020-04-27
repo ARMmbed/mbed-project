@@ -6,174 +6,173 @@ import pathlib
 
 from unittest import mock, TestCase
 
-import git
-
-from pyfakefs.fake_filesystem_unittest import patchfs
-
 from mbed_project import MbedProgram
-from mbed_project.exceptions import ExistingProgram, ProgramNotFound, VersionControlError
-from mbed_project.mbed_program import _find_program_root
-from mbed_project._internal.project_data import MbedProgramData, MbedLibReference, MbedOS
-from tests.factories import make_mbed_program_files, make_mbed_lib_reference, make_mbed_os_files
+from mbed_project.exceptions import ExistingProgram, ProgramNotFound
+from mbed_project.mbed_program import _find_program_root, parse_url
+from mbed_project._internal.project_data import MbedProgramData, MbedOS
+from tests.factories import make_mbed_program_files, make_mbed_os_files, make_mbed_lib_reference, patchfs
 
 
 class TestInitialiseProgram(TestCase):
     @patchfs
     def test_from_new_local_dir_raises_if_path_is_existing_program(self, fs):
-        program_root = pathlib.Path("programfoo")
-        fs.create_file(str(program_root / ".mbed"))
+        program_root = pathlib.Path(fs, "programfoo")
+        program_root.mkdir()
+        (program_root / ".mbed").touch()
 
         with self.assertRaises(ExistingProgram):
             MbedProgram.from_new_local_directory(program_root)
 
     @patchfs
-    @mock.patch("mbed_project.mbed_program.git.Repo", autospec=True)
-    def test_from_new_local_dir_generates_valid_program(self, mock_repo, fs):
-        fs_root = pathlib.Path("foo")
-        fs.create_dir(str(fs_root))
+    @mock.patch("mbed_project._internal.git_utils.init", autospec=True)
+    def test_from_new_local_dir_generates_valid_program(self, mock_init, fs):
+        fs_root = pathlib.Path(fs, "foo")
+        fs_root.mkdir()
         program_root = fs_root / "programfoo"
 
         program = MbedProgram.from_new_local_directory(program_root)
 
         self.assertEqual(program.metadata, MbedProgramData.from_existing(program_root))
-        self.assertEqual(program.repo, mock_repo.init.return_value)
-        mock_repo.init.assert_called_once_with(str(program_root))
-
-    @patchfs
-    @mock.patch("mbed_project.mbed_program.git.Repo", autospec=True)
-    def test_from_url_raises_if_clone_fails(self, mock_repo, fs):
-        fs_root = pathlib.Path("foo")
-        fs.create_dir(str(fs_root))
-        url = "https://notvalid.com"
-        mock_repo.clone_from.side_effect = git.exc.GitCommandError("git clone", 127)
-
-        with self.assertRaises(VersionControlError):
-            MbedProgram.from_remote_url(url, fs_root)
+        self.assertEqual(program.repo, mock_init.return_value)
+        mock_init.assert_called_once_with(program_root)
 
     @patchfs
     def test_from_url_raises_if_dest_dir_contains_program(self, fs):
-        fs_root = pathlib.Path("foo")
-        make_mbed_program_files(fs_root, fs)
+        fs_root = pathlib.Path(fs, "foo")
+        make_mbed_program_files(fs_root)
         url = "https://valid"
 
         with self.assertRaises(ExistingProgram):
             MbedProgram.from_remote_url(url, fs_root)
 
     @patchfs
-    @mock.patch("mbed_project.mbed_program.git.Repo", autospec=True)
+    @mock.patch("mbed_project._internal.git_utils.clone", autospec=True)
     def test_from_url_raises_if_cloned_repo_is_not_program(self, mock_repo, fs):
-        fs_root = pathlib.Path("foo")
-        fs.create_dir(str(fs_root))
+        fs_root = pathlib.Path(fs, "foo")
+        fs_root.mkdir()
         url = "https://validrepo.com"
-        mock_repo.clone_from.side_effect = lambda url, dst_dir: fs.create_dir(dst_dir)
+        mock_repo.side_effect = lambda url, dst_dir: dst_dir.mkdir()
 
         with self.assertRaises(ProgramNotFound):
             MbedProgram.from_remote_url(url, fs_root / "corrupt-prog")
 
     @patchfs
-    @mock.patch("mbed_project.mbed_program._tree_contains_program", autospec=True)
-    @mock.patch("mbed_project.mbed_program.git.Repo", autospec=True)
-    def test_from_url_returns_valid_program(self, mock_repo, mock_tree_contains_program, fs):
-        fs_root = pathlib.Path("foo")
-        make_mbed_program_files(fs_root, fs)
+    @mock.patch("mbed_project.mbed_program.git_utils.clone", autospec=True)
+    def test_from_url_returns_valid_program(self, mock_clone, fs):
+        fs_root = pathlib.Path(fs, "foo")
         url = "https://valid"
-        mock_tree_contains_program.return_value = False
-
+        mock_clone.side_effect = lambda *args: make_mbed_program_files(fs_root)
         program = MbedProgram.from_remote_url(url, fs_root)
 
         self.assertEqual(program.metadata, MbedProgramData.from_existing(fs_root))
-        self.assertEqual(program.repo, mock_repo.clone_from.return_value)
-        mock_repo.clone_from.assert_called_once_with(url, str(fs_root))
+        mock_clone.assert_called_once_with(url, fs_root)
 
     @patchfs
     def test_from_existing_raises_if_path_is_not_a_program(self, fs):
-        fs_root = pathlib.Path("foo")
-        fs.create_dir(str(fs_root))
+        fs_root = pathlib.Path(fs, "foo")
+        fs_root.mkdir()
         program_root = fs_root / "programfoo"
 
         with self.assertRaises(ProgramNotFound):
             MbedProgram.from_existing_local_program_directory(program_root)
 
     @patchfs
-    @mock.patch("mbed_project.mbed_program.git.Repo", autospec=True)
+    @mock.patch("mbed_project._internal.git_utils.git.Repo", autospec=True)
     def test_from_existing_returns_valid_program(self, mock_repo, fs):
-        fs_root = pathlib.Path("/foo")
-        make_mbed_program_files(fs_root, fs)
-        make_mbed_os_files(fs_root / "mbed-os", fs)
+        fs_root = pathlib.Path(fs, "foo")
+        make_mbed_program_files(fs_root)
+        make_mbed_os_files(fs_root / "mbed-os")
 
         program = MbedProgram.from_existing_local_program_directory(fs_root)
 
-        self.assertEqual(program.metadata, MbedProgramData.from_existing(fs_root))
-        self.assertEqual(program.mbed_os, MbedOS.from_existing(fs_root / "mbed-os"))
-        self.assertEqual(program.repo, mock_repo.return_value)
-        mock_repo.assert_called_once_with(str(fs_root))
+        self.assertTrue(program.metadata.config_file.exists())
+        self.assertTrue(program.mbed_os.root.exists())
+        self.assertIsNotNone(program.repo)
 
 
-@mock.patch("mbed_project.mbed_program.git.Repo", autospec=True)
-class TestMbedProgramLibraryHandling(TestCase):
-    @patchfs
-    @mock.patch("mbed_project.mbed_program.ProgressReporter")
-    def test_hydrates_top_level_library_references(self, progress_mock, mock_repo, fs):
-        fs_root = pathlib.Path("/foo")
-        make_mbed_program_files(fs_root, fs)
-        make_mbed_os_files(fs_root / "mbed-os", fs)
-        lib = make_mbed_lib_reference(fs_root, fs, ref_url="https://git")
-        mock_repo.clone_from.side_effect = lambda url, dst_dir, progress: fs.create_dir(dst_dir)
-
-        program = MbedProgram.from_existing_local_program_directory(fs_root)
+class TestLibReferenceHandling(TestCase):
+    @mock.patch("mbed_project.mbed_program.LibraryReferences", autospec=True)
+    def test_resolve_libraries(self, mock_lib_refs):
+        program = MbedProgram(None, MbedProgramData(None, pathlib.Path(), None), MbedOS(pathlib.Path(), None))
         program.resolve_libraries()
 
-        mock_repo.clone_from.assert_called_once_with(
-            lib.get_git_reference().repo_url, str(lib.source_code_path), progress=progress_mock()
-        )
-        self.assertTrue(lib.is_resolved())
+        program.lib_references.resolve.assert_called_once()
+
+    @mock.patch("mbed_project.mbed_program.LibraryReferences", autospec=True)
+    def test_checkout_libraries(self, mock_lib_refs):
+        program = MbedProgram(None, MbedProgramData(None, pathlib.Path(), None), MbedOS(pathlib.Path(), None))
+        program.checkout_libraries()
+
+        program.lib_references.checkout.assert_called_once()
 
     @patchfs
-    def test_hydrates_recursive_dependencies(self, mock_repo, fs):
-        fs_root = pathlib.Path("/foo")
-        make_mbed_program_files(fs_root, fs)
-        make_mbed_os_files(fs_root / "mbed-os", fs)
-        lib = make_mbed_lib_reference(fs_root, fs, ref_url="https://git")
-        # Create a lib reference without touching the fs at this point, we want to mock the effects of a recursive
-        # reference lookup and we need to assert the reference was resolved.
-        lib2 = MbedLibReference(
-            reference_file=(lib.source_code_path / "lib2.lib"), source_code_path=(lib.source_code_path / "lib2")
+    def test_lists_all_known_libraries(self, fs):
+        root = pathlib.Path(fs, "root")
+        lib_ref = make_mbed_lib_reference(root, resolved=True, ref_url="https://blah")
+        lib_ref_unresolved = make_mbed_lib_reference(
+            root, name="my-unresolved-lib.lib", resolved=False, ref_url="https://blah"
         )
-        # Here we mock the effects of a recursive reference lookup. We create a new lib reference as a side effect of
-        # the first call to the mock. Then we create the src dir, thus resolving the lib, on the second call.
-        mock_repo.clone_from.side_effect = lambda url, dst_dir, progress: (
-            make_mbed_lib_reference(pathlib.Path(dst_dir), fs, name=lib2.reference_file.name, ref_url="https://valid2"),
-            fs.create_dir(lib2.source_code_path),
+        mbed_os_root = root / "mbed-os"
+        mbed_os_root.mkdir()
+
+        program = MbedProgram(
+            None, MbedProgramData(None, pathlib.Path(root, ".mbed"), None), MbedOS(mbed_os_root, None)
         )
+        libs = program.list_known_library_dependencies()
+        self.assertEqual(str(lib_ref_unresolved), str(libs[0]))
+        self.assertEqual(str(lib_ref), str(libs[1]))
 
-        program = MbedProgram.from_existing_local_program_directory(fs_root)
-        program.resolve_libraries()
+    @patchfs
+    def test_checks_for_unresolved_libraries(self, fs):
+        root = pathlib.Path(fs, "root")
+        make_mbed_lib_reference(root, resolved=True, ref_url="https://blah")
+        make_mbed_lib_reference(root, name="my-unresolved-lib.lib", resolved=False, ref_url="https://blah")
+        mbed_os_root = root / "mbed-os"
+        mbed_os_root.mkdir()
 
-        self.assertTrue(lib.is_resolved())
-        self.assertTrue(lib2.is_resolved())
+        program = MbedProgram(
+            None, MbedProgramData(None, pathlib.Path(root / ".mbed"), None), MbedOS(mbed_os_root, None)
+        )
+        self.assertTrue(program.has_unresolved_libraries())
+
+
+class TestParseURL(TestCase):
+    def test_creates_url_and_dst_dir_from_name(self):
+        name = "mbed-os-example-blows-up-board"
+        data = parse_url(name)
+
+        self.assertEqual(data["url"], f"https://github.com/armmbed/{name}")
+        self.assertEqual(data["dst_path"], name)
+
+    def test_creates_valid_dst_dir_from_url(self):
+        url = "https://superversioncontrol/superorg/mbed-os-example-numskull"
+        data = parse_url(url)
+
+        self.assertEqual(data["url"], url)
+        self.assertEqual(data["dst_path"], "mbed-os-example-numskull")
 
 
 class TestFindProgramRoot(TestCase):
     @patchfs
     def test_finds_program_higher_in_dir_tree(self, fs):
-        program_root = pathlib.Path("foo")
+        program_root = pathlib.Path(fs, "foo")
         pwd = program_root / "subprojfoo" / "libbar"
-        make_mbed_program_files(program_root, fs)
-        fs.create_dir(str(pwd))
+        make_mbed_program_files(program_root)
+        pwd.mkdir(parents=True)
 
         self.assertEqual(_find_program_root(pwd), program_root.resolve())
 
     @patchfs
     def test_finds_program_at_current_path(self, fs):
-        program_root = pathlib.Path("foo")
-        make_mbed_program_files(program_root, fs)
+        program_root = pathlib.Path(fs, "foo")
+        make_mbed_program_files(program_root)
 
         self.assertEqual(_find_program_root(program_root), program_root.resolve())
 
     @patchfs
     def test_raises_if_no_program_found(self, fs):
-        program_root = pathlib.Path("foo")
-        fs.create_dir(str(program_root))
+        program_root = pathlib.Path(fs, "foo")
+        program_root.mkdir()
 
         with self.assertRaises(ProgramNotFound):
             _find_program_root(program_root)

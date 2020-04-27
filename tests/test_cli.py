@@ -20,7 +20,7 @@ class TestInitCommand(TestCase):
     def test_echos_mbed_os_message_when_required(self, mock_initialise_project):
         result = CliRunner().invoke(init, ["path"])
 
-        self.assertEquals(
+        self.assertEqual(
             result.output,
             "Creating a new Mbed program at path 'path'.\nDownloading mbed-os and adding it to the project.\n",
         )
@@ -29,11 +29,11 @@ class TestInitCommand(TestCase):
 @mock.patch("mbed_project.mbed_tools.cli.clone_project", autospec=True)
 class TestCloneCommand(TestCase):
     def test_calls_clone_function_with_correct_args(self, mocked_clone_project):
-        CliRunner().invoke(clone, ["url"])
-        mocked_clone_project.assert_called_once_with("url")
+        CliRunner().invoke(clone, ["url", "dst"])
+        mocked_clone_project.assert_called_once_with("url", pathlib.Path("dst"), True)
 
 
-@mock.patch("mbed_project.mbed_tools.cli.get_libs", autospec=True)
+@mock.patch("mbed_project.mbed_tools.cli.get_known_libs", autospec=True)
 class TestLibsCommand(TestCase):
     def test_calls_libs_function(self, mocked_get_libs):
         CliRunner().invoke(libs)
@@ -43,5 +43,5 @@ class TestLibsCommand(TestCase):
 @mock.patch("mbed_project.mbed_tools.cli.checkout_project_revision", autospec=True)
 class TestCheckoutCommand(TestCase):
     def test_calls_checkout_function_with_correct_args(self, mocked_checkout_project_revision):
-        CliRunner().invoke(checkout, ["path", "revision", "--force"])
-        mocked_checkout_project_revision.assert_called_once_with(pathlib.Path("path"), "revision", True)
+        CliRunner().invoke(checkout, ["path", "--force"])
+        mocked_checkout_project_revision.assert_called_once_with(pathlib.Path("path"), True)

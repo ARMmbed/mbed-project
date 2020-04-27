@@ -4,20 +4,31 @@
 #
 """Defines the public API of the package."""
 import pathlib
+import logging
 
-from typing import List
+from typing import Dict, Any
 
-from mbed_project.mbed_program import MbedProgram
+from mbed_project.mbed_program import MbedProgram, parse_url
+
+logger = logging.getLogger(__name__)
 
 
-def clone_project(url: str, recursive: bool = False) -> None:
+def clone_project(url: str, dst_path: Any = None, recursive: bool = False) -> None:
     """Clones an Mbed project from a remote repository.
 
     Args:
         url: URL of the repository to clone.
+        dst_path: Destination path for the repository.
         recursive: Recursively clone all project dependencies.
     """
-    pass
+    git_data = parse_url(url)
+    url = git_data["url"]
+    if not dst_path:
+        dst_path = pathlib.Path(git_data["dst_path"])
+
+    program = MbedProgram.from_remote_url(url, dst_path)
+    if recursive:
+        program.resolve_libraries()
 
 
 def initialise_project(path: pathlib.Path, create_only: bool) -> None:
@@ -32,7 +43,7 @@ def initialise_project(path: pathlib.Path, create_only: bool) -> None:
         program.resolve_libraries()
 
 
-def checkout_project_revision(path: pathlib.Path, project_revision: str, force: bool = False) -> None:
+def checkout_project_revision(path: pathlib.Path, force: bool = False) -> None:
     """Checkout a specific revision of the current Mbed project.
 
     This function also resolves and syncs all library dependencies to the revision specified in the library reference
@@ -44,15 +55,24 @@ def checkout_project_revision(path: pathlib.Path, project_revision: str, force: 
         force: Force overwrite uncommitted changes. If False, the checkout will fail if there are uncommitted local
                changes.
     """
-    pass
+    program = MbedProgram.from_existing_local_program_directory(path)
+    program.checkout_libraries(force=force)
+    if program.has_unresolved_libraries():
+        logger.info("Unresolved libraries detected, downloading library source code.")
+        program.resolve_libraries()
 
 
-def get_libs(path: pathlib.Path) -> List[str]:
+def get_known_libs(path: pathlib.Path) -> Dict[str, Any]:
     """List all resolved library dependencies.
 
     This function will not resolve dependencies. This will only generate a list of resolved dependencies.
 
     Args:
         path: Path to the Mbed project.
+
+    Returns:
+        dictionary containing a list of known dependencies and a boolean stating whether unresolved dependencies were
+        detected.
     """
-    return [""]
+    program = MbedProgram.from_existing_local_program_directory(path)
+    return {"known_libs": program.list_known_library_dependencies(), "unresolved": program.has_unresolved_libraries()}

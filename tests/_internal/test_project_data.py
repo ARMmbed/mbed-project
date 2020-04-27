@@ -7,25 +7,23 @@ import pathlib
 
 from unittest import TestCase
 
-from pyfakefs.fake_filesystem_unittest import patchfs
-
 from mbed_project._internal.project_data import MbedProgramData, MbedOS
-from tests.factories import make_mbed_lib_reference, make_mbed_program_files, make_mbed_os_files
+from tests.factories import make_mbed_lib_reference, make_mbed_program_files, make_mbed_os_files, patchfs
 
 
 class TestMbedProgramData(TestCase):
     @patchfs
     def test_from_new_raises_if_program_already_exists(self, fs):
-        root = pathlib.Path("foo")
-        make_mbed_program_files(root, fs)
+        root = pathlib.Path(fs, "foo")
+        make_mbed_program_files(root)
 
         with self.assertRaises(ValueError):
             MbedProgramData.from_new(root)
 
     @patchfs
     def test_from_new_returns_valid_program(self, fs):
-        root = pathlib.Path("foo")
-        fs.create_dir(root)
+        root = pathlib.Path(fs, "foo")
+        root.mkdir()
 
         program = MbedProgramData.from_new(root)
 
@@ -33,16 +31,16 @@ class TestMbedProgramData(TestCase):
 
     @patchfs
     def test_from_existing_raises_if_program_doesnt_exist(self, fs):
-        root = pathlib.Path("foo")
-        fs.create_dir(root)
+        root = pathlib.Path(fs, "foo")
+        root.mkdir()
 
         with self.assertRaises(ValueError):
             MbedProgramData.from_existing(root)
 
     @patchfs
     def test_from_existing_finds_existing_program_data(self, fs):
-        root = pathlib.Path("foo")
-        make_mbed_program_files(root, fs)
+        root = pathlib.Path(fs, "foo")
+        make_mbed_program_files(root)
 
         program = MbedProgramData.from_existing(root)
 
@@ -52,25 +50,26 @@ class TestMbedProgramData(TestCase):
 class TestMbedLibReference(TestCase):
     @patchfs
     def test_is_resolved_returns_true_if_source_code_dir_exists(self, fs):
-        root = pathlib.Path("foo")
-        lib = make_mbed_lib_reference(root, fs, resolved=True)
+        root = pathlib.Path(fs, "foo")
+        lib = make_mbed_lib_reference(root, resolved=True)
 
         self.assertTrue(lib.is_resolved())
 
     @patchfs
     def test_is_resolved_returns_false_if_source_code_dir_doesnt_exist(self, fs):
-        root = pathlib.Path("foo")
-        lib = make_mbed_lib_reference(root, fs)
+        root = pathlib.Path(fs, "foo")
+        lib = make_mbed_lib_reference(root)
 
         self.assertFalse(lib.is_resolved())
 
     @patchfs
     def test_get_git_reference_returns_lib_file_contents(self, fs):
-        root = pathlib.Path("foo")
+        root = pathlib.Path(fs, "foo")
         url = "https://github.com/mylibrepo"
         ref = "latest"
         full_ref = f"{url}#{ref}"
-        lib = make_mbed_lib_reference(root, fs, ref_url=full_ref)
+        lib = make_mbed_lib_reference(root, ref_url=full_ref)
+
         reference = lib.get_git_reference()
 
         self.assertEqual(reference.repo_url, url)
@@ -80,8 +79,8 @@ class TestMbedLibReference(TestCase):
 class TestMbedOS(TestCase):
     @patchfs
     def test_from_existing_finds_existing_mbed_os_data(self, fs):
-        root_path = pathlib.Path("my-version-of-mbed-os")
-        make_mbed_os_files(root_path, fs)
+        root_path = pathlib.Path(fs, "my-version-of-mbed-os")
+        make_mbed_os_files(root_path)
 
         mbed_os = MbedOS.from_existing(root_path)
 
@@ -89,8 +88,8 @@ class TestMbedOS(TestCase):
 
     @patchfs
     def test_raises_if_files_missing(self, fs):
-        root_path = pathlib.Path("my-version-of-mbed-os")
-        fs.create_dir(root_path)
+        root_path = pathlib.Path(fs, "my-version-of-mbed-os")
+        root_path.mkdir()
 
         with self.assertRaises(ValueError):
             MbedOS.from_existing(root_path)

@@ -103,7 +103,7 @@ class MbedProgramData:
 
         mbed_file.touch()
         config.touch()
-        mbed_os_ref.write_text(MBED_OS_REFERENCE_URL)
+        mbed_os_ref.write_text(f"{MBED_OS_REFERENCE_URL}#master")
         return cls(config_file=config, mbed_file=mbed_file, mbed_os_ref=mbed_os_ref)
 
     @classmethod
@@ -152,9 +152,9 @@ class MbedOS:
         targets_json_file = root_path / TARGETS_JSON_FILE_PATH
 
         if not root_path.exists():
-            raise ValueError("The mbed-os directory does not exist.")
+            logger.info("The mbed-os directory does not exist.")
 
-        if not targets_json_file.exists():
+        if root_path.exists() and not targets_json_file.exists():
             raise ValueError("This MbedOS copy does not contain a targets.json file.")
 
         return cls(root=root_path, targets_json_file=targets_json_file)
