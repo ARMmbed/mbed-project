@@ -7,27 +7,27 @@ import pathlib
 
 from unittest import TestCase
 
-from mbed_project._internal.project_data import MbedProgramData, MbedOS
+from mbed_project._internal.project_data import MbedProgramFiles, MbedOS
 from tests.factories import make_mbed_lib_reference, make_mbed_program_files, make_mbed_os_files, patchfs
 
 
-class TestMbedProgramData(TestCase):
+class TestMbedProgramFiles(TestCase):
     @patchfs
     def test_from_new_raises_if_program_already_exists(self, fs):
         root = pathlib.Path(fs, "foo")
         make_mbed_program_files(root)
 
         with self.assertRaises(ValueError):
-            MbedProgramData.from_new(root)
+            MbedProgramFiles.from_new(root)
 
     @patchfs
     def test_from_new_returns_valid_program(self, fs):
         root = pathlib.Path(fs, "foo")
         root.mkdir()
 
-        program = MbedProgramData.from_new(root)
+        program = MbedProgramFiles.from_new(root)
 
-        self.assertTrue(program.config_file.exists())
+        self.assertTrue(program.app_config_file.exists())
 
     @patchfs
     def test_from_existing_raises_if_program_doesnt_exist(self, fs):
@@ -35,16 +35,16 @@ class TestMbedProgramData(TestCase):
         root.mkdir()
 
         with self.assertRaises(ValueError):
-            MbedProgramData.from_existing(root)
+            MbedProgramFiles.from_existing(root)
 
     @patchfs
     def test_from_existing_finds_existing_program_data(self, fs):
         root = pathlib.Path(fs, "foo")
         make_mbed_program_files(root)
 
-        program = MbedProgramData.from_existing(root)
+        program = MbedProgramFiles.from_existing(root)
 
-        self.assertTrue(program.config_file.exists())
+        self.assertTrue(program.app_config_file.exists())
 
 
 class TestMbedLibReference(TestCase):
