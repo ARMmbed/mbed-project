@@ -5,7 +5,9 @@
 [![PyPI](https://badgen.net/pypi/v/mbed-project)](https://pypi.org/project/mbed-project/)
 [![PyPI - Status](https://img.shields.io/pypi/status/mbed-project)](https://pypi.org/project/mbed-project/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/mbed-project)](https://pypi.org/project/mbed-project/)
+
 [![License](https://badgen.net/pypi/license/mbed-project)](https://github.com/ARMmbed/mbed-project/blob/master/LICENSE)
+[![Compliance](https://badgen.net/badge/License%20Report/compliant/green?icon=libraries)](https://armmbed.github.io/mbed-project/third_party_IP_report.html)
 
 [![Build Status](https://dev.azure.com/mbed-tools/mbed-project/_apis/build/status/Build%20and%20Release?branchName=master&stageName=CI%20Checkpoint)](https://dev.azure.com/mbed-tools/mbed-project/_build/latest?definitionId=14&branchName=master)
 [![Test Coverage](https://codecov.io/gh/ARMmbed/mbed-project/branch/master/graph/badge.svg)](https://codecov.io/gh/ARMmbed/mbed-project)
