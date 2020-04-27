@@ -119,8 +119,8 @@ class TestLibReferenceHandling(TestCase):
             None, MbedProgramData(None, pathlib.Path(root, ".mbed"), None), MbedOS(mbed_os_root, None)
         )
         libs = program.list_known_library_dependencies()
-        self.assertIn(lib_ref.get_git_reference().repo_url, libs[0])
-        self.assertIn(lib_ref_unresolved.get_git_reference().repo_url, libs[1])
+        self.assertEqual(str(lib_ref_unresolved), str(libs[0]))
+        self.assertEqual(str(lib_ref), str(libs[1]))
 
     @patchfs
     def test_checks_for_unresolved_libraries(self, fs):

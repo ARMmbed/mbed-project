@@ -17,7 +17,7 @@ from mbed_project._internal.project_data import (
     PROGRAM_ROOT_FILE_NAME,
     MBED_OS_DIR_NAME,
 )
-from mbed_project._internal.libraries import LibraryReferences
+from mbed_project._internal.libraries import LibraryReferences, MbedLibReference
 
 logger = logging.getLogger(__name__)
 
@@ -127,12 +127,9 @@ class MbedProgram:
         """Check out all resolved libraries to revisions specified in .lib files."""
         self.lib_references.checkout(force)
 
-    def list_known_library_dependencies(self) -> List[str]:
+    def list_known_library_dependencies(self) -> List[MbedLibReference]:
         """Returns a list of all known library dependencies."""
-        return [
-            f"Library: {lib.get_git_reference().repo_url}, revision: {lib.get_git_reference().ref}"
-            for lib in self.lib_references.iter_all()
-        ]
+        return [lib for lib in self.lib_references.iter_all()]
 
     def has_unresolved_libraries(self) -> bool:
         """Checks if any unresolved library dependencies exist in the program tree."""
@@ -153,6 +150,7 @@ def parse_url(name_or_url: str) -> Dict[str, str]:
         url = url_obj.geturl()
     else:
         url = f"https://github.com/armmbed/{url_obj.path}"
+    # We need to create a valid directory name from the url path section.
     return {"url": url, "dst_path": url_obj.path.rsplit("/", maxsplit=1)[-1].replace("/", "")}
 
 
@@ -198,7 +196,7 @@ def _find_program_root(cwd: Path) -> Path:
 
     logger.debug("No .mbed file found.")
     raise ProgramNotFound(
-        f"No program found from {cwd.resolve()} to {cwd.resolve().root}. Please set the cwd to a program directory "
+        f"No program found from {cwd.resolve()} to {cwd.resolve().anchor}. Please set the cwd to a program directory "
         "containing a .mbed file. You can also set your cwd to a program subdirectory if there is a .mbed file at the "
         "root of your program's directory tree. If your program does not contain a .mbed file, please create an empty "
         ".mbed file at the root of the program directory tree before performing any other operations."

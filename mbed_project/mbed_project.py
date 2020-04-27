@@ -62,13 +62,17 @@ def checkout_project_revision(path: pathlib.Path, force: bool = False) -> None:
         program.resolve_libraries()
 
 
-def list_libs(path: pathlib.Path) -> Dict[str, Any]:
+def get_known_libs(path: pathlib.Path) -> Dict[str, Any]:
     """List all resolved library dependencies.
 
     This function will not resolve dependencies. This will only generate a list of resolved dependencies.
 
     Args:
         path: Path to the Mbed project.
+
+    Returns:
+        dictionary containing a list of known dependencies and a boolean stating whether unresolved dependencies were
+        detected.
     """
     program = MbedProgram.from_existing_local_program_directory(path)
     return {"known_libs": program.list_known_library_dependencies(), "unresolved": program.has_unresolved_libraries()}

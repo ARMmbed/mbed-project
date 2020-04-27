@@ -44,6 +44,7 @@ setup(
         "dataclasses; python_version<'3.7'",
         "mbed-tools-lib",
         "git-python",
+        "tabulate",
         "tqdm",
     ],
     license="Apache 2.0",

@@ -33,7 +33,7 @@ class TestCloneCommand(TestCase):
         mocked_clone_project.assert_called_once_with("url", pathlib.Path("dst"), True)
 
 
-@mock.patch("mbed_project.mbed_tools.cli.list_libs", autospec=True)
+@mock.patch("mbed_project.mbed_tools.cli.get_known_libs", autospec=True)
 class TestLibsCommand(TestCase):
     def test_calls_libs_function(self, mocked_get_libs):
         CliRunner().invoke(libs)

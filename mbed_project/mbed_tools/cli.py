@@ -9,8 +9,9 @@ import pathlib
 from typing import Any
 
 import click
+import tabulate
 
-from mbed_project import initialise_project, clone_project, list_libs, checkout_project_revision
+from mbed_project import initialise_project, clone_project, get_known_libs, checkout_project_revision
 
 
 @click.command()
@@ -63,11 +64,19 @@ def libs(path: str) -> None:
 
     PATH: Path to the Mbed project [default: CWD]
     """
-    lib_data = list_libs(pathlib.Path(path))
-    click.echo("This program has the following library dependencies: ")
-    click.echo("\n".join(sorted(lib_data["known_libs"])))
+    lib_data = get_known_libs(pathlib.Path(path))
+    click.echo("This program has the following library dependencies: \n")
+    table = []
+    for lib in sorted(lib_data["known_libs"]):
+        table.append([lib.reference_file.stem, lib.get_git_reference().repo_url, lib.get_git_reference().ref])
+
+    headers = ("Library Name", "Repository URL", "Git reference")
+    click.echo(tabulate.tabulate(table, headers=headers))
+
     if lib_data["unresolved"]:
-        click.echo("Unresolved libraries detected. Please run the `checkout` command to download library source code.")
+        click.echo(
+            "\nUnresolved libraries detected. Please run the `checkout` command to download library source code."
+        )
 
 
 @click.command()

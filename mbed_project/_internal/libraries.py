@@ -14,7 +14,7 @@ from mbed_project._internal import git_utils
 logger = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclass(frozen=True, order=True)
 class MbedLibReference:
     """Metadata associated with an Mbed library.
 
