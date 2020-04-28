@@ -4,7 +4,7 @@
 #
 from functools import wraps
 from tempfile import TemporaryDirectory
-from mbed_project._internal.project_data import MbedLibReference
+from mbed_project._internal.libraries import MbedLibReference
 
 
 def patchfs(func):

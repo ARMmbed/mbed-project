@@ -9,7 +9,7 @@ from unittest import mock, TestCase
 from mbed_project import MbedProgram
 from mbed_project.exceptions import ExistingProgram, ProgramNotFound
 from mbed_project.mbed_program import _find_program_root, parse_url
-from mbed_project._internal.project_data import MbedProgramData, MbedOS
+from mbed_project._internal.project_data import MbedProgramFiles, MbedOS
 from tests.factories import make_mbed_program_files, make_mbed_os_files, make_mbed_lib_reference, patchfs
 
 
@@ -21,7 +21,7 @@ class TestInitialiseProgram(TestCase):
         (program_root / ".mbed").touch()
 
         with self.assertRaises(ExistingProgram):
-            MbedProgram.from_new_local_directory(program_root)
+            MbedProgram.from_new(program_root)
 
     @patchfs
     @mock.patch("mbed_project._internal.git_utils.init", autospec=True)
@@ -30,9 +30,9 @@ class TestInitialiseProgram(TestCase):
         fs_root.mkdir()
         program_root = fs_root / "programfoo"
 
-        program = MbedProgram.from_new_local_directory(program_root)
+        program = MbedProgram.from_new(program_root)
 
-        self.assertEqual(program.metadata, MbedProgramData.from_existing(program_root))
+        self.assertEqual(program.files, MbedProgramFiles.from_existing(program_root))
         self.assertEqual(program.repo, mock_init.return_value)
         mock_init.assert_called_once_with(program_root)
 
@@ -43,7 +43,7 @@ class TestInitialiseProgram(TestCase):
         url = "https://valid"
 
         with self.assertRaises(ExistingProgram):
-            MbedProgram.from_remote_url(url, fs_root)
+            MbedProgram.from_url(url, fs_root)
 
     @patchfs
     @mock.patch("mbed_project._internal.git_utils.clone", autospec=True)
@@ -54,7 +54,7 @@ class TestInitialiseProgram(TestCase):
         mock_repo.side_effect = lambda url, dst_dir: dst_dir.mkdir()
 
         with self.assertRaises(ProgramNotFound):
-            MbedProgram.from_remote_url(url, fs_root / "corrupt-prog")
+            MbedProgram.from_url(url, fs_root / "corrupt-prog")
 
     @patchfs
     @mock.patch("mbed_project.mbed_program.git_utils.clone", autospec=True)
@@ -62,9 +62,9 @@ class TestInitialiseProgram(TestCase):
         fs_root = pathlib.Path(fs, "foo")
         url = "https://valid"
         mock_clone.side_effect = lambda *args: make_mbed_program_files(fs_root)
-        program = MbedProgram.from_remote_url(url, fs_root)
+        program = MbedProgram.from_url(url, fs_root)
 
-        self.assertEqual(program.metadata, MbedProgramData.from_existing(fs_root))
+        self.assertEqual(program.files, MbedProgramFiles.from_existing(fs_root))
         mock_clone.assert_called_once_with(url, fs_root)
 
     @patchfs
@@ -74,7 +74,7 @@ class TestInitialiseProgram(TestCase):
         program_root = fs_root / "programfoo"
 
         with self.assertRaises(ProgramNotFound):
-            MbedProgram.from_existing_local_program_directory(program_root)
+            MbedProgram.from_existing(program_root)
 
     @patchfs
     @mock.patch("mbed_project._internal.git_utils.git.Repo", autospec=True)
@@ -83,9 +83,9 @@ class TestInitialiseProgram(TestCase):
         make_mbed_program_files(fs_root)
         make_mbed_os_files(fs_root / "mbed-os")
 
-        program = MbedProgram.from_existing_local_program_directory(fs_root)
+        program = MbedProgram.from_existing(fs_root)
 
-        self.assertTrue(program.metadata.config_file.exists())
+        self.assertTrue(program.files.app_config_file.exists())
         self.assertTrue(program.mbed_os.root.exists())
         self.assertIsNotNone(program.repo)
 
@@ -93,14 +93,14 @@ class TestInitialiseProgram(TestCase):
 class TestLibReferenceHandling(TestCase):
     @mock.patch("mbed_project.mbed_program.LibraryReferences", autospec=True)
     def test_resolve_libraries(self, mock_lib_refs):
-        program = MbedProgram(None, MbedProgramData(None, pathlib.Path(), None), MbedOS(pathlib.Path(), None))
+        program = MbedProgram(None, MbedProgramFiles(None, pathlib.Path(), None), MbedOS(pathlib.Path(), None))
         program.resolve_libraries()
 
         program.lib_references.resolve.assert_called_once()
 
     @mock.patch("mbed_project.mbed_program.LibraryReferences", autospec=True)
     def test_checkout_libraries(self, mock_lib_refs):
-        program = MbedProgram(None, MbedProgramData(None, pathlib.Path(), None), MbedOS(pathlib.Path(), None))
+        program = MbedProgram(None, MbedProgramFiles(None, pathlib.Path(), None), MbedOS(pathlib.Path(), None))
         program.checkout_libraries()
 
         program.lib_references.checkout.assert_called_once()
@@ -116,7 +116,7 @@ class TestLibReferenceHandling(TestCase):
         mbed_os_root.mkdir()
 
         program = MbedProgram(
-            None, MbedProgramData(None, pathlib.Path(root, ".mbed"), None), MbedOS(mbed_os_root, None)
+            None, MbedProgramFiles(None, pathlib.Path(root, ".mbed"), None), MbedOS(mbed_os_root, None)
         )
         libs = program.list_known_library_dependencies()
         self.assertEqual(str(lib_ref_unresolved), str(libs[0]))
@@ -131,7 +131,7 @@ class TestLibReferenceHandling(TestCase):
         mbed_os_root.mkdir()
 
         program = MbedProgram(
-            None, MbedProgramData(None, pathlib.Path(root / ".mbed"), None), MbedOS(mbed_os_root, None)
+            None, MbedProgramFiles(None, pathlib.Path(root / ".mbed"), None), MbedOS(mbed_os_root, None)
         )
         self.assertTrue(program.has_unresolved_libraries())
 

@@ -26,7 +26,7 @@ def clone_project(url: str, dst_path: Any = None, recursive: bool = False) -> No
     if not dst_path:
         dst_path = pathlib.Path(git_data["dst_path"])
 
-    program = MbedProgram.from_remote_url(url, dst_path)
+    program = MbedProgram.from_url(url, dst_path)
     if recursive:
         program.resolve_libraries()
 
@@ -38,7 +38,7 @@ def initialise_project(path: pathlib.Path, create_only: bool) -> None:
         path: Path to the project folder. Created if it doesn't exist.
         create_only: Flag which suppreses fetching mbed-os. If the value is `False`, fetch mbed-os from the remote.
     """
-    program = MbedProgram.from_new_local_directory(path)
+    program = MbedProgram.from_new(path)
     if not create_only:
         program.resolve_libraries()
 
@@ -55,7 +55,7 @@ def checkout_project_revision(path: pathlib.Path, force: bool = False) -> None:
         force: Force overwrite uncommitted changes. If False, the checkout will fail if there are uncommitted local
                changes.
     """
-    program = MbedProgram.from_existing_local_program_directory(path)
+    program = MbedProgram.from_existing(path)
     program.checkout_libraries(force=force)
     if program.has_unresolved_libraries():
         logger.info("Unresolved libraries detected, downloading library source code.")
@@ -74,5 +74,5 @@ def get_known_libs(path: pathlib.Path) -> Dict[str, Any]:
         dictionary containing a list of known dependencies and a boolean stating whether unresolved dependencies were
         detected.
     """
-    program = MbedProgram.from_existing_local_program_directory(path)
+    program = MbedProgram.from_existing(path)
     return {"known_libs": program.list_known_library_dependencies(), "unresolved": program.has_unresolved_libraries()}
