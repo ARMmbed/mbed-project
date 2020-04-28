@@ -25,8 +25,11 @@ logger = logging.getLogger(__name__)
 class MbedProgram:
     """Represents an Mbed program.
 
-    An `MbedProgram` consists of a git repo, a copy of `MbedOS`, a set of `MbedProgramFiles` and a collection of
-    references to external libraries defined in .lib files located in the program source tree.
+    An `MbedProgram` consists of:
+        * A git repository
+        * A copy of, or reference to, `MbedOS`
+        * A set of `MbedProgramFiles`
+        * A collection of references to external libraries, defined in .lib files located in the program source tree
     """
 
     def __init__(self, repo: git_utils.git.Repo, program_files: MbedProgramFiles, mbed_os: MbedOS) -> None:
