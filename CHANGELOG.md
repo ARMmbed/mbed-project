@@ -12,6 +12,15 @@ beta releases are not included in this history. For a full list of all releases,
 
 [//]: # (begin_release_notes)
 
+"2.0.0" (2020-04-28)
+====================
+
+Major changes
+-------------
+
+- Rename classmethods and internal attributes (#20200427)
+
+
 "1.0.0" (2020-04-27)
 ====================
 

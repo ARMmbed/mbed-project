@@ -43,7 +43,7 @@ from urllib.parse import urlparse
 from mbed_project.exceptions import ProgramNotFound, ExistingProgram
 from mbed_project._internal import git_utils
 from mbed_project._internal.project_data import (
-    MbedProgramData,
+    MbedProgramFiles,
     MbedOS,
     PROGRAM_ROOT_FILE_NAME,
     MBED_OS_DIR_NAME,
@@ -56,27 +56,28 @@ logger = logging.getLogger(__name__)
 class MbedProgram:
     &#34;&#34;&#34;Represents an Mbed program.
 
-    An `MbedProgram` consists of a git repo and `MbedProgramData`. The `MbedProgramData` contains configuration files
-    used for building an Mbed application, and a .mbed file which defines the program&#39;s root path.
-
-    `MbedProgram` provides classmethods to cope with different initialisation scenarios.
+    An `MbedProgram` consists of:
+        * A git repository
+        * A copy of, or reference to, `MbedOS`
+        * A set of `MbedProgramFiles`
+        * A collection of references to external libraries, defined in .lib files located in the program source tree
     &#34;&#34;&#34;
 
-    def __init__(self, repo: git_utils.git.Repo, program_data: MbedProgramData, mbed_os: MbedOS) -&gt; None:
+    def __init__(self, repo: git_utils.git.Repo, program_files: MbedProgramFiles, mbed_os: MbedOS) -&gt; None:
         &#34;&#34;&#34;Initialise the program attributes.
 
         Args:
-            repo: The program&#39;s associated git repository.
-            program_data: An instance of `MbedProgramData` containing metadata about the program.
-            mbed_os: An instance of `MbedOS` containing metadata about the Mbed OS copy used.
+            repo: The program&#39;s git repository.
+            program_files: Object holding paths to a set of files that define an Mbed program.
+            mbed_os: An instance of `MbedOS` holding paths to locations in the local copy of the Mbed OS source.
         &#34;&#34;&#34;
         self.repo = repo
-        self.metadata = program_data
+        self.files = program_files
         self.mbed_os = mbed_os
-        self.lib_references = LibraryReferences(root=self.metadata.mbed_file.parent, ignore_paths=[self.mbed_os.root])
+        self.lib_references = LibraryReferences(root=self.files.mbed_file.parent, ignore_paths=[self.mbed_os.root])
 
     @classmethod
-    def from_remote_url(cls, url: str, dst_path: Path) -&gt; &#34;MbedProgram&#34;:
+    def from_url(cls, url: str, dst_path: Path) -&gt; &#34;MbedProgram&#34;:
         &#34;&#34;&#34;Fetch an Mbed program from a remote URL.
 
         Args:
@@ -95,7 +96,7 @@ class MbedProgram:
         repo = git_utils.clone(url, dst_path)
 
         try:
-            program = MbedProgramData.from_existing(dst_path)
+            program_files = MbedProgramFiles.from_existing(dst_path)
         except ValueError as e:
             raise ProgramNotFound(
                 f&#34;This repository does not contain a valid Mbed program at the top level. {e} &#34;
@@ -104,11 +105,11 @@ class MbedProgram:
                 &#34;should cd to a directory containing a program before performing any other operations.&#34;
             )
 
-        mbed_os = MbedOS.from_new(dst_path / MBED_OS_DIR_NAME)
-        return cls(repo, program, mbed_os)
+        mbed_os = MbedOS.from_existing(dst_path / MBED_OS_DIR_NAME)
+        return cls(repo, program_files, mbed_os)
 
     @classmethod
-    def from_new_local_directory(cls, dir_path: Path) -&gt; &#34;MbedProgram&#34;:
+    def from_new(cls, dir_path: Path) -&gt; &#34;MbedProgram&#34;:
         &#34;&#34;&#34;Create an MbedProgram from an empty directory.
 
         Creates the directory if it doesn&#39;t exist.
@@ -125,16 +126,16 @@ class MbedProgram:
                 &#34;programs. Please ensure there is no .mbed file in the cwd hierarchy.&#34;
             )
 
-        logger.info(f&#34;Creating Mbed program at path {dir_path.resolve()}&#34;)
+        logger.info(f&#34;Creating Mbed program at path &#39;{dir_path.resolve()}&#39;&#34;)
         dir_path.mkdir(exist_ok=True)
-        program_data = MbedProgramData.from_new(dir_path)
+        program_files = MbedProgramFiles.from_new(dir_path)
         logger.info(f&#34;Creating git repository for the Mbed program &#39;{dir_path}&#39;&#34;)
         repo = git_utils.init(dir_path)
         mbed_os = MbedOS.from_new(dir_path / MBED_OS_DIR_NAME)
-        return cls(repo, program_data, mbed_os)
+        return cls(repo, program_files, mbed_os)
 
     @classmethod
-    def from_existing_local_program_directory(cls, dir_path: Path) -&gt; &#34;MbedProgram&#34;:
+    def from_existing(cls, dir_path: Path) -&gt; &#34;MbedProgram&#34;:
         &#34;&#34;&#34;Create an MbedProgram from an existing program directory.
 
         Args:
@@ -146,7 +147,7 @@ class MbedProgram:
         program_root = _find_program_root(dir_path)
         logger.info(f&#34;Found existing Mbed program at path &#39;{program_root}&#39;&#34;)
         repo = git_utils.git.Repo(str(program_root))
-        program = MbedProgramData.from_existing(program_root)
+        program = MbedProgramFiles.from_existing(program_root)
         mbed_os = MbedOS.from_existing(program_root / MBED_OS_DIR_NAME)
         return cls(repo, program, mbed_os)
 
@@ -211,7 +212,7 @@ def _find_program_root(cwd: Path) -&gt; Path:
         cwd: The directory path to search for a program.
 
     Raises:
-        ProgramNotFound: No `MbedProgramData` found in the path.
+        ProgramNotFound: No .mbed file found in the path.
 
     Returns:
         Path containing the .mbed file.
@@ -282,22 +283,24 @@ def _find_program_root(cwd: Path) -&gt; Path:
 <dl>
 <dt id="mbed_project.mbed_program.MbedProgram"><code class="flex name class">
 <span>class <span class="ident">MbedProgram</span></span>
-<span>(</span><span>repo: git.repo.base.Repo, program_data: mbed_project._internal.project_data.MbedProgramData, mbed_os: mbed_project._internal.project_data.MbedOS)</span>
+<span>(</span><span>repo: git.repo.base.Repo, program_files: mbed_project._internal.project_data.MbedProgramFiles, mbed_os: mbed_project._internal.project_data.MbedOS)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Represents an Mbed program.</p>
-<p>An <code><a title="mbed_project.mbed_program.MbedProgram" href="#mbed_project.mbed_program.MbedProgram">MbedProgram</a></code> consists of a git repo and <code>MbedProgramData</code>. The <code>MbedProgramData</code> contains configuration files
-used for building an Mbed application, and a .mbed file which defines the program's root path.</p>
-<p><code><a title="mbed_project.mbed_program.MbedProgram" href="#mbed_project.mbed_program.MbedProgram">MbedProgram</a></code> provides classmethods to cope with different initialisation scenarios.</p>
+<p>An <code><a title="mbed_project.mbed_program.MbedProgram" href="#mbed_project.mbed_program.MbedProgram">MbedProgram</a></code> consists of:
+* A git repository
+* A copy of, or reference to, <code>MbedOS</code>
+* A set of <code>MbedProgramFiles</code>
+* A collection of references to external libraries, defined in .lib files located in the program source tree</p>
 <p>Initialise the program attributes.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>repo</code></strong></dt>
-<dd>The program's associated git repository.</dd>
-<dt><strong><code>program_data</code></strong></dt>
-<dd>An instance of <code>MbedProgramData</code> containing metadata about the program.</dd>
+<dd>The program's git repository.</dd>
+<dt><strong><code>program_files</code></strong></dt>
+<dd>Object holding paths to a set of files that define an Mbed program.</dd>
 <dt><strong><code>mbed_os</code></strong></dt>
-<dd>An instance of <code>MbedOS</code> containing metadata about the Mbed OS copy used.</dd>
+<dd>An instance of <code>MbedOS</code> holding paths to locations in the local copy of the Mbed OS source.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -306,27 +309,28 @@ used for building an Mbed application, and a .mbed file which defines the progra
 <pre><code class="python">class MbedProgram:
     &#34;&#34;&#34;Represents an Mbed program.
 
-    An `MbedProgram` consists of a git repo and `MbedProgramData`. The `MbedProgramData` contains configuration files
-    used for building an Mbed application, and a .mbed file which defines the program&#39;s root path.
-
-    `MbedProgram` provides classmethods to cope with different initialisation scenarios.
+    An `MbedProgram` consists of:
+        * A git repository
+        * A copy of, or reference to, `MbedOS`
+        * A set of `MbedProgramFiles`
+        * A collection of references to external libraries, defined in .lib files located in the program source tree
     &#34;&#34;&#34;
 
-    def __init__(self, repo: git_utils.git.Repo, program_data: MbedProgramData, mbed_os: MbedOS) -&gt; None:
+    def __init__(self, repo: git_utils.git.Repo, program_files: MbedProgramFiles, mbed_os: MbedOS) -&gt; None:
         &#34;&#34;&#34;Initialise the program attributes.
 
         Args:
-            repo: The program&#39;s associated git repository.
-            program_data: An instance of `MbedProgramData` containing metadata about the program.
-            mbed_os: An instance of `MbedOS` containing metadata about the Mbed OS copy used.
+            repo: The program&#39;s git repository.
+            program_files: Object holding paths to a set of files that define an Mbed program.
+            mbed_os: An instance of `MbedOS` holding paths to locations in the local copy of the Mbed OS source.
         &#34;&#34;&#34;
         self.repo = repo
-        self.metadata = program_data
+        self.files = program_files
         self.mbed_os = mbed_os
-        self.lib_references = LibraryReferences(root=self.metadata.mbed_file.parent, ignore_paths=[self.mbed_os.root])
+        self.lib_references = LibraryReferences(root=self.files.mbed_file.parent, ignore_paths=[self.mbed_os.root])
 
     @classmethod
-    def from_remote_url(cls, url: str, dst_path: Path) -&gt; &#34;MbedProgram&#34;:
+    def from_url(cls, url: str, dst_path: Path) -&gt; &#34;MbedProgram&#34;:
         &#34;&#34;&#34;Fetch an Mbed program from a remote URL.
 
         Args:
@@ -345,7 +349,7 @@ used for building an Mbed application, and a .mbed file which defines the progra
         repo = git_utils.clone(url, dst_path)
 
         try:
-            program = MbedProgramData.from_existing(dst_path)
+            program_files = MbedProgramFiles.from_existing(dst_path)
         except ValueError as e:
             raise ProgramNotFound(
                 f&#34;This repository does not contain a valid Mbed program at the top level. {e} &#34;
@@ -354,11 +358,11 @@ used for building an Mbed application, and a .mbed file which defines the progra
                 &#34;should cd to a directory containing a program before performing any other operations.&#34;
             )
 
-        mbed_os = MbedOS.from_new(dst_path / MBED_OS_DIR_NAME)
-        return cls(repo, program, mbed_os)
+        mbed_os = MbedOS.from_existing(dst_path / MBED_OS_DIR_NAME)
+        return cls(repo, program_files, mbed_os)
 
     @classmethod
-    def from_new_local_directory(cls, dir_path: Path) -&gt; &#34;MbedProgram&#34;:
+    def from_new(cls, dir_path: Path) -&gt; &#34;MbedProgram&#34;:
         &#34;&#34;&#34;Create an MbedProgram from an empty directory.
 
         Creates the directory if it doesn&#39;t exist.
@@ -375,16 +379,16 @@ used for building an Mbed application, and a .mbed file which defines the progra
                 &#34;programs. Please ensure there is no .mbed file in the cwd hierarchy.&#34;
             )
 
-        logger.info(f&#34;Creating Mbed program at path {dir_path.resolve()}&#34;)
+        logger.info(f&#34;Creating Mbed program at path &#39;{dir_path.resolve()}&#39;&#34;)
         dir_path.mkdir(exist_ok=True)
-        program_data = MbedProgramData.from_new(dir_path)
+        program_files = MbedProgramFiles.from_new(dir_path)
         logger.info(f&#34;Creating git repository for the Mbed program &#39;{dir_path}&#39;&#34;)
         repo = git_utils.init(dir_path)
         mbed_os = MbedOS.from_new(dir_path / MBED_OS_DIR_NAME)
-        return cls(repo, program_data, mbed_os)
+        return cls(repo, program_files, mbed_os)
 
     @classmethod
-    def from_existing_local_program_directory(cls, dir_path: Path) -&gt; &#34;MbedProgram&#34;:
+    def from_existing(cls, dir_path: Path) -&gt; &#34;MbedProgram&#34;:
         &#34;&#34;&#34;Create an MbedProgram from an existing program directory.
 
         Args:
@@ -396,7 +400,7 @@ used for building an Mbed application, and a .mbed file which defines the progra
         program_root = _find_program_root(dir_path)
         logger.info(f&#34;Found existing Mbed program at path &#39;{program_root}&#39;&#34;)
         repo = git_utils.git.Repo(str(program_root))
-        program = MbedProgramData.from_existing(program_root)
+        program = MbedProgramFiles.from_existing(program_root)
         mbed_os = MbedOS.from_existing(program_root / MBED_OS_DIR_NAME)
         return cls(repo, program, mbed_os)
 
@@ -418,8 +422,8 @@ used for building an Mbed application, and a .mbed file which defines the progra
 </details>
 <h3>Static methods</h3>
 <dl>
-<dt id="mbed_project.mbed_program.MbedProgram.from_existing_local_program_directory"><code class="name flex">
-<span>def <span class="ident">from_existing_local_program_directory</span></span>(<span>dir_path: pathlib.Path) -> <a title="mbed_project.mbed_program.MbedProgram" href="#mbed_project.mbed_program.MbedProgram">MbedProgram</a></span>
+<dt id="mbed_project.mbed_program.MbedProgram.from_existing"><code class="name flex">
+<span>def <span class="ident">from_existing</span></span>(<span>dir_path: pathlib.Path) -> <a title="mbed_project.mbed_program.MbedProgram" href="#mbed_project.mbed_program.MbedProgram">MbedProgram</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create an MbedProgram from an existing program directory.</p>
@@ -438,7 +442,7 @@ used for building an Mbed application, and a .mbed file which defines the progra
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def from_existing_local_program_directory(cls, dir_path: Path) -&gt; &#34;MbedProgram&#34;:
+def from_existing(cls, dir_path: Path) -&gt; &#34;MbedProgram&#34;:
     &#34;&#34;&#34;Create an MbedProgram from an existing program directory.
 
     Args:
@@ -450,13 +454,13 @@ def from_existing_local_program_directory(cls, dir_path: Path) -&gt; &#34;MbedPr
     program_root = _find_program_root(dir_path)
     logger.info(f&#34;Found existing Mbed program at path &#39;{program_root}&#39;&#34;)
     repo = git_utils.git.Repo(str(program_root))
-    program = MbedProgramData.from_existing(program_root)
+    program = MbedProgramFiles.from_existing(program_root)
     mbed_os = MbedOS.from_existing(program_root / MBED_OS_DIR_NAME)
     return cls(repo, program, mbed_os)</code></pre>
 </details>
 </dd>
-<dt id="mbed_project.mbed_program.MbedProgram.from_new_local_directory"><code class="name flex">
-<span>def <span class="ident">from_new_local_directory</span></span>(<span>dir_path: pathlib.Path) -> <a title="mbed_project.mbed_program.MbedProgram" href="#mbed_project.mbed_program.MbedProgram">MbedProgram</a></span>
+<dt id="mbed_project.mbed_program.MbedProgram.from_new"><code class="name flex">
+<span>def <span class="ident">from_new</span></span>(<span>dir_path: pathlib.Path) -> <a title="mbed_project.mbed_program.MbedProgram" href="#mbed_project.mbed_program.MbedProgram">MbedProgram</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create an MbedProgram from an empty directory.</p>
@@ -476,7 +480,7 @@ def from_existing_local_program_directory(cls, dir_path: Path) -&gt; &#34;MbedPr
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def from_new_local_directory(cls, dir_path: Path) -&gt; &#34;MbedProgram&#34;:
+def from_new(cls, dir_path: Path) -&gt; &#34;MbedProgram&#34;:
     &#34;&#34;&#34;Create an MbedProgram from an empty directory.
 
     Creates the directory if it doesn&#39;t exist.
@@ -493,17 +497,17 @@ def from_new_local_directory(cls, dir_path: Path) -&gt; &#34;MbedProgram&#34;:
             &#34;programs. Please ensure there is no .mbed file in the cwd hierarchy.&#34;
         )
 
-    logger.info(f&#34;Creating Mbed program at path {dir_path.resolve()}&#34;)
+    logger.info(f&#34;Creating Mbed program at path &#39;{dir_path.resolve()}&#39;&#34;)
     dir_path.mkdir(exist_ok=True)
-    program_data = MbedProgramData.from_new(dir_path)
+    program_files = MbedProgramFiles.from_new(dir_path)
     logger.info(f&#34;Creating git repository for the Mbed program &#39;{dir_path}&#39;&#34;)
     repo = git_utils.init(dir_path)
     mbed_os = MbedOS.from_new(dir_path / MBED_OS_DIR_NAME)
-    return cls(repo, program_data, mbed_os)</code></pre>
+    return cls(repo, program_files, mbed_os)</code></pre>
 </details>
 </dd>
-<dt id="mbed_project.mbed_program.MbedProgram.from_remote_url"><code class="name flex">
-<span>def <span class="ident">from_remote_url</span></span>(<span>url: str, dst_path: pathlib.Path) -> <a title="mbed_project.mbed_program.MbedProgram" href="#mbed_project.mbed_program.MbedProgram">MbedProgram</a></span>
+<dt id="mbed_project.mbed_program.MbedProgram.from_url"><code class="name flex">
+<span>def <span class="ident">from_url</span></span>(<span>url: str, dst_path: pathlib.Path) -> <a title="mbed_project.mbed_program.MbedProgram" href="#mbed_project.mbed_program.MbedProgram">MbedProgram</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Fetch an Mbed program from a remote URL.</p>
@@ -524,7 +528,7 @@ def from_new_local_directory(cls, dir_path: Path) -&gt; &#34;MbedProgram&#34;:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def from_remote_url(cls, url: str, dst_path: Path) -&gt; &#34;MbedProgram&#34;:
+def from_url(cls, url: str, dst_path: Path) -&gt; &#34;MbedProgram&#34;:
     &#34;&#34;&#34;Fetch an Mbed program from a remote URL.
 
     Args:
@@ -543,7 +547,7 @@ def from_remote_url(cls, url: str, dst_path: Path) -&gt; &#34;MbedProgram&#34;:
     repo = git_utils.clone(url, dst_path)
 
     try:
-        program = MbedProgramData.from_existing(dst_path)
+        program_files = MbedProgramFiles.from_existing(dst_path)
     except ValueError as e:
         raise ProgramNotFound(
             f&#34;This repository does not contain a valid Mbed program at the top level. {e} &#34;
@@ -552,8 +556,8 @@ def from_remote_url(cls, url: str, dst_path: Path) -&gt; &#34;MbedProgram&#34;:
             &#34;should cd to a directory containing a program before performing any other operations.&#34;
         )
 
-    mbed_os = MbedOS.from_new(dst_path / MBED_OS_DIR_NAME)
-    return cls(repo, program, mbed_os)</code></pre>
+    mbed_os = MbedOS.from_existing(dst_path / MBED_OS_DIR_NAME)
+    return cls(repo, program_files, mbed_os)</code></pre>
 </details>
 </dd>
 </dl>
@@ -642,9 +646,9 @@ def from_remote_url(cls, url: str, dst_path: Path) -&gt; &#34;MbedProgram&#34;:
 <h4><code><a title="mbed_project.mbed_program.MbedProgram" href="#mbed_project.mbed_program.MbedProgram">MbedProgram</a></code></h4>
 <ul class="">
 <li><code><a title="mbed_project.mbed_program.MbedProgram.checkout_libraries" href="#mbed_project.mbed_program.MbedProgram.checkout_libraries">checkout_libraries</a></code></li>
-<li><code><a title="mbed_project.mbed_program.MbedProgram.from_existing_local_program_directory" href="#mbed_project.mbed_program.MbedProgram.from_existing_local_program_directory">from_existing_local_program_directory</a></code></li>
-<li><code><a title="mbed_project.mbed_program.MbedProgram.from_new_local_directory" href="#mbed_project.mbed_program.MbedProgram.from_new_local_directory">from_new_local_directory</a></code></li>
-<li><code><a title="mbed_project.mbed_program.MbedProgram.from_remote_url" href="#mbed_project.mbed_program.MbedProgram.from_remote_url">from_remote_url</a></code></li>
+<li><code><a title="mbed_project.mbed_program.MbedProgram.from_existing" href="#mbed_project.mbed_program.MbedProgram.from_existing">from_existing</a></code></li>
+<li><code><a title="mbed_project.mbed_program.MbedProgram.from_new" href="#mbed_project.mbed_program.MbedProgram.from_new">from_new</a></code></li>
+<li><code><a title="mbed_project.mbed_program.MbedProgram.from_url" href="#mbed_project.mbed_program.MbedProgram.from_url">from_url</a></code></li>
 <li><code><a title="mbed_project.mbed_program.MbedProgram.has_unresolved_libraries" href="#mbed_project.mbed_program.MbedProgram.has_unresolved_libraries">has_unresolved_libraries</a></code></li>
 <li><code><a title="mbed_project.mbed_program.MbedProgram.list_known_library_dependencies" href="#mbed_project.mbed_program.MbedProgram.list_known_library_dependencies">list_known_library_dependencies</a></code></li>
 <li><code><a title="mbed_project.mbed_program.MbedProgram.resolve_libraries" href="#mbed_project.mbed_program.MbedProgram.resolve_libraries">resolve_libraries</a></code></li>
