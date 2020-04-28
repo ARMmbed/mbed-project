@@ -50,7 +50,7 @@ class MbedProgramFiles:
             root_path: The directory in which to create the program data files.
 
         Raises:
-            ValueError: MbedProgramFiles already exists at this path.
+            ValueError: A program .mbed or mbed-os.lib file already exists at this path.
         """
         app_config = root_path / APP_CONFIG_FILE_NAME
         mbed_file = root_path / PROGRAM_ROOT_FILE_NAME
