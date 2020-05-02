@@ -23,13 +23,7 @@ APP_CONFIG_FILE_NAME = "mbed_app.json"
 
 # For some reason Mbed OS expects the default mbed_app.json to contain some target_overrides
 # for the K64F target. TODO: Find out why this wouldn't be defined in targets.json.
-DEFAULT_APP_CONFIG = {
-    "target_overrides": {
-        "K64F": {
-            "platform.stdio-baud-rate": 9600
-        }
-    }
-}
+DEFAULT_APP_CONFIG = {"target_overrides": {"K64F": {"platform.stdio-baud-rate": 9600}}}
 
 
 @dataclass

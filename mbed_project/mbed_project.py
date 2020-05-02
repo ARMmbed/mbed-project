@@ -8,7 +8,6 @@ import logging
 
 from typing import Dict, Any
 
-from mbed_project import exceptions
 from mbed_project.mbed_program import MbedProgram, parse_url
 
 logger = logging.getLogger(__name__)
