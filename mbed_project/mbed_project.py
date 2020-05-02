@@ -8,6 +8,7 @@ import logging
 
 from typing import Dict, Any
 
+from mbed_project import exceptions
 from mbed_project.mbed_program import MbedProgram, parse_url
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ def clone_project(url: str, dst_path: Any = None, recursive: bool = False) -> No
     if not dst_path:
         dst_path = pathlib.Path(git_data["dst_path"])
 
-    program = MbedProgram.from_url(url, dst_path)
+    program = MbedProgram.from_url(url, dst_path, check_mbed_os=False)
     if recursive:
         program.resolve_libraries()
 
@@ -55,7 +56,7 @@ def checkout_project_revision(path: pathlib.Path, force: bool = False) -> None:
         force: Force overwrite uncommitted changes. If False, the checkout will fail if there are uncommitted local
                changes.
     """
-    program = MbedProgram.from_existing(path)
+    program = MbedProgram.from_existing(path, check_mbed_os=False)
     program.checkout_libraries(force=force)
     if program.has_unresolved_libraries():
         logger.info("Unresolved libraries detected, downloading library source code.")
@@ -74,5 +75,6 @@ def get_known_libs(path: pathlib.Path) -> Dict[str, Any]:
         dictionary containing a list of known dependencies and a boolean stating whether unresolved dependencies were
         detected.
     """
-    program = MbedProgram.from_existing(path)
+    program = MbedProgram.from_existing(path, check_mbed_os=False)
+
     return {"known_libs": program.list_known_library_dependencies(), "unresolved": program.has_unresolved_libraries()}

@@ -62,7 +62,7 @@ class TestInitialiseProgram(TestCase):
         fs_root = pathlib.Path(fs, "foo")
         url = "https://valid"
         mock_clone.side_effect = lambda *args: make_mbed_program_files(fs_root)
-        program = MbedProgram.from_url(url, fs_root)
+        program = MbedProgram.from_url(url, fs_root, False)
 
         self.assertEqual(program.files, MbedProgramFiles.from_existing(fs_root))
         mock_clone.assert_called_once_with(url, fs_root)

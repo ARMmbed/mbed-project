@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import List, Dict
 from urllib.parse import urlparse
 
-from mbed_project.exceptions import ProgramNotFound, ExistingProgram
+from mbed_project.exceptions import ProgramNotFound, ExistingProgram, MbedOSNotFound
 from mbed_project._internal import git_utils
 from mbed_project._internal.project_data import (
     MbedProgramFiles,
@@ -46,7 +46,7 @@ class MbedProgram:
         self.lib_references = LibraryReferences(root=self.files.mbed_file.parent, ignore_paths=[self.mbed_os.root])
 
     @classmethod
-    def from_url(cls, url: str, dst_path: Path) -> "MbedProgram":
+    def from_url(cls, url: str, dst_path: Path, check_mbed_os: bool = True) -> "MbedProgram":
         """Fetch an Mbed program from a remote URL.
 
         Args:
@@ -74,7 +74,11 @@ class MbedProgram:
                 "should cd to a directory containing a program before performing any other operations."
             )
 
-        mbed_os = MbedOS.from_existing(dst_path / MBED_OS_DIR_NAME)
+        try:
+            mbed_os = MbedOS.from_existing(dst_path / MBED_OS_DIR_NAME, check_mbed_os)
+        except ValueError as mbed_err:
+            raise MbedOSNotFound(f"{mbed_err}")
+
         return cls(repo, program_files, mbed_os)
 
     @classmethod
@@ -104,20 +108,33 @@ class MbedProgram:
         return cls(repo, program_files, mbed_os)
 
     @classmethod
-    def from_existing(cls, dir_path: Path) -> "MbedProgram":
+    def from_existing(cls, dir_path: Path, check_mbed_os: bool = True) -> "MbedProgram":
         """Create an MbedProgram from an existing program directory.
 
         Args:
             dir_path: Directory containing an Mbed program.
+            check_mbed_os: If True causes an exception to be raised if the Mbed OS source directory does not
+                           exist.
 
         Raises:
             ProgramNotFound: An existing program was not found in the path.
         """
         program_root = _find_program_root(dir_path)
         logger.info(f"Found existing Mbed program at path '{program_root}'")
-        repo = git_utils.git.Repo(str(program_root))
-        program = MbedProgramFiles.from_existing(program_root)
-        mbed_os = MbedOS.from_existing(program_root / MBED_OS_DIR_NAME)
+        repo = git_utils.get_repo(program_root)
+        try:
+            program = MbedProgramFiles.from_existing(program_root)
+        except ValueError as program_files_err:
+            raise ProgramNotFound(f"{dir_path} doesn't look like a path to a valid program. {program_files_err}")
+
+        try:
+            mbed_os = MbedOS.from_existing(program_root / MBED_OS_DIR_NAME, check_mbed_os)
+        except ValueError as mbed_os_err:
+            raise MbedOSNotFound(
+                f"Mbed OS was not found due to the following error: {mbed_os_err}"
+                "\nYou may need to resolve the mbed-os.lib reference. You can do this by performing a `checkout`."
+            )
+
         return cls(repo, program, mbed_os)
 
     def resolve_libraries(self) -> None:
@@ -188,8 +205,9 @@ def _find_program_root(cwd: Path) -> Path:
     """
     potential_root = cwd.resolve()
     while str(potential_root) != str(potential_root.anchor):
-        logging.debug(f"Searching for .mbed file at path {potential_root}")
-        if (potential_root / PROGRAM_ROOT_FILE_NAME).exists():
+        logger.debug(f"Searching for .mbed file at path {potential_root}")
+        root_file = potential_root / PROGRAM_ROOT_FILE_NAME
+        if root_file.exists() and root_file.is_file():
             logger.debug(f".mbed file found at {potential_root}")
             return potential_root
 
