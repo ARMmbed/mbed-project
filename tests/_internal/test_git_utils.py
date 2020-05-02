@@ -51,4 +51,4 @@ class TestGetRepo(TestCase):
         mock_repo.side_effect = git_utils.git.exc.InvalidGitRepositoryError
 
         with self.assertRaises(VersionControlError):
-            repo = git_utils.get_repo(Path())
+            git_utils.get_repo(Path())
