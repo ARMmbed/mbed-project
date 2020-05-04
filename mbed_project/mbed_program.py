@@ -121,12 +121,12 @@ class MbedProgram:
         """
         program_root = _find_program_root(dir_path)
         logger.info(f"Found existing Mbed program at path '{program_root}'")
-        repo = git_utils.get_repo(program_root)
         try:
             program = MbedProgramFiles.from_existing(program_root)
         except ValueError as program_files_err:
             raise ProgramNotFound(f"{dir_path} doesn't look like a path to a valid program. {program_files_err}")
 
+        repo = git_utils.get_repo(program_root)
         try:
             mbed_os = MbedOS.from_existing(program_root / MBED_OS_DIR_NAME, check_mbed_os)
         except ValueError as mbed_os_err:
