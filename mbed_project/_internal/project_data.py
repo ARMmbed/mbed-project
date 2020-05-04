@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 """Objects representing Mbed program and library data."""
+import json
 import logging
 
 from dataclasses import dataclass
@@ -18,6 +19,11 @@ MBED_OS_REFERENCE_URL = "https://github.com/ARMmbed/mbed-os"
 MBED_OS_REFERENCE_FILE_NAME = "mbed-os.lib"
 PROGRAM_ROOT_FILE_NAME = ".mbed"
 APP_CONFIG_FILE_NAME = "mbed_app.json"
+
+
+# For some reason Mbed OS expects the default mbed_app.json to contain some target_overrides
+# for the K64F target. TODO: Find out why this wouldn't be defined in targets.json.
+DEFAULT_APP_CONFIG = {"target_overrides": {"K64F": {"platform.stdio-baud-rate": 9600}}}
 
 
 @dataclass
@@ -60,7 +66,7 @@ class MbedProgramFiles:
             raise ValueError(f"Program already exists at path {root_path}.")
 
         mbed_file.touch()
-        app_config.touch()
+        app_config.write_text(json.dumps(DEFAULT_APP_CONFIG, indent=4))
         mbed_os_ref.write_text(f"{MBED_OS_REFERENCE_URL}#master")
         return cls(app_config_file=app_config, mbed_file=mbed_file, mbed_os_ref=mbed_os_ref)
 
@@ -105,12 +111,12 @@ class MbedOS:
     targets_json_file: Path
 
     @classmethod
-    def from_existing(cls, root_path: Path) -> "MbedOS":
+    def from_existing(cls, root_path: Path, check_root_path_exists: bool = True) -> "MbedOS":
         """Create MbedOS from a directory containing an existing MbedOS installation."""
         targets_json_file = root_path / TARGETS_JSON_FILE_PATH
 
-        if not root_path.exists():
-            logger.info("The mbed-os directory does not exist.")
+        if check_root_path_exists and not root_path.exists():
+            raise ValueError("The mbed-os directory does not exist.")
 
         if root_path.exists() and not targets_json_file.exists():
             raise ValueError("This MbedOS copy does not contain a targets.json file.")

@@ -7,7 +7,7 @@ import pathlib
 from unittest import mock, TestCase
 
 from mbed_project import MbedProgram
-from mbed_project.exceptions import ExistingProgram, ProgramNotFound
+from mbed_project.exceptions import ExistingProgram, ProgramNotFound, MbedOSNotFound, VersionControlError
 from mbed_project.mbed_program import _find_program_root, parse_url
 from mbed_project._internal.project_data import MbedProgramFiles, MbedOS
 from tests.factories import make_mbed_program_files, make_mbed_os_files, make_mbed_lib_reference, patchfs
@@ -57,12 +57,22 @@ class TestInitialiseProgram(TestCase):
             MbedProgram.from_url(url, fs_root / "corrupt-prog")
 
     @patchfs
+    @mock.patch("mbed_project._internal.git_utils.clone", autospec=True)
+    def test_from_url_raises_if_check_mbed_os_is_true_and_mbed_os_dir_nonexistent(self, mock_clone, fs):
+        fs_root = pathlib.Path(fs, "foo")
+        url = "https://validrepo.com"
+        mock_clone.side_effect = lambda *args: make_mbed_program_files(fs_root)
+
+        with self.assertRaises(MbedOSNotFound):
+            MbedProgram.from_url(url, fs_root, check_mbed_os=True)
+
+    @patchfs
     @mock.patch("mbed_project.mbed_program.git_utils.clone", autospec=True)
     def test_from_url_returns_valid_program(self, mock_clone, fs):
         fs_root = pathlib.Path(fs, "foo")
         url = "https://valid"
         mock_clone.side_effect = lambda *args: make_mbed_program_files(fs_root)
-        program = MbedProgram.from_url(url, fs_root)
+        program = MbedProgram.from_url(url, fs_root, False)
 
         self.assertEqual(program.files, MbedProgramFiles.from_existing(fs_root))
         mock_clone.assert_called_once_with(url, fs_root)
@@ -75,6 +85,33 @@ class TestInitialiseProgram(TestCase):
 
         with self.assertRaises(ProgramNotFound):
             MbedProgram.from_existing(program_root)
+
+    @patchfs
+    def test_from_existing_raises_if_program_files_missing(self, fs):
+        fs_root = pathlib.Path(fs, "foo")
+        fs_root.mkdir()
+        (fs_root / ".mbed").touch()
+        program_root = fs_root
+
+        with self.assertRaises(ProgramNotFound):
+            MbedProgram.from_existing(program_root)
+
+    @patchfs
+    def test_from_existing_raises_if_no_repo_found(self, fs):
+        fs_root = pathlib.Path(fs, "foo")
+        make_mbed_program_files(fs_root)
+
+        with self.assertRaises(VersionControlError):
+            MbedProgram.from_existing(fs_root)
+
+    @patchfs
+    @mock.patch("mbed_project._internal.git_utils.git.Repo", autospec=True)
+    def test_from_existing_raises_if_no_mbed_os_dir_found_and_check_mbed_os_is_true(self, mock_repo, fs):
+        fs_root = pathlib.Path(fs, "foo")
+        make_mbed_program_files(fs_root)
+
+        with self.assertRaises(MbedOSNotFound):
+            MbedProgram.from_existing(fs_root, check_mbed_os=True)
 
     @patchfs
     @mock.patch("mbed_project._internal.git_utils.git.Repo", autospec=True)

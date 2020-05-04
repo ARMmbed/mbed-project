@@ -32,13 +32,13 @@ class TestCloneProject(TestCase):
         url = "https://git.com/gitorg/repo"
         clone_project(url, recursive=False)
 
-        mock_program.from_url.assert_called_once_with(url, pathlib.Path(url.rsplit("/", maxsplit=1)[-1]))
+        mock_program.from_url.assert_called_once_with(url, pathlib.Path(url.rsplit("/", maxsplit=1)[-1]), False)
 
     def test_resolves_libs_when_recursive_is_true(self, mock_program):
         url = "https://git.com/gitorg/repo"
         clone_project(url, recursive=True)
 
-        mock_program.from_url.assert_called_once_with(url, pathlib.Path(url.rsplit("/", maxsplit=1)[-1]))
+        mock_program.from_url.assert_called_once_with(url, pathlib.Path(url.rsplit("/", maxsplit=1)[-1]), False)
         mock_program.from_url.return_value.resolve_libraries.assert_called_once()
 
 
@@ -48,7 +48,7 @@ class TestCheckoutProject(TestCase):
         path = pathlib.Path("somewhere")
         checkout_project_revision(path, force=False)
 
-        mock_program.from_existing.assert_called_once_with(path)
+        mock_program.from_existing.assert_called_once_with(path, False)
         mock_program.from_existing.return_value.checkout_libraries.assert_called_once_with(force=False)
 
     def test_resolves_libs_if_unresolved_detected(self, mock_program):
@@ -64,5 +64,5 @@ class TestPrintLibs(TestCase):
         path = pathlib.Path("somewhere")
         get_known_libs(path)
 
-        mock_program.from_existing.assert_called_once_with(path)
+        mock_program.from_existing.assert_called_once_with(path, False)
         mock_program.from_existing.return_value.list_known_library_dependencies.assert_called()

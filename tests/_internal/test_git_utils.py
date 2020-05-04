@@ -38,3 +38,17 @@ class TestInit(TestCase):
 
         with self.assertRaises(VersionControlError):
             git_utils.init(Path())
+
+
+@mock.patch("mbed_project._internal.git_utils.git.Repo", autospec=True)
+class TestGetRepo(TestCase):
+    def test_returns_repo_object(self, mock_repo):
+        repo = git_utils.get_repo(Path())
+
+        self.assertTrue(isinstance(repo, mock_repo.__class__))
+
+    def test_raises_version_control_error_when_no_git_repo_found(self, mock_repo):
+        mock_repo.side_effect = git_utils.git.exc.InvalidGitRepositoryError
+
+        with self.assertRaises(VersionControlError):
+            git_utils.get_repo(Path())

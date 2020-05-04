@@ -75,3 +75,23 @@ def init(path: Path) -> git.Repo:
         return git.Repo.init(str(path))
     except git.exc.GitCommandError as err:
         raise VersionControlError(f"Failed to initialise git repository at path '{path}'. Error from VCS: {err.stderr}")
+
+
+def get_repo(path: Path) -> git.Repo:
+    """Get a git.Repo object from an existing repository path.
+
+    Args:
+        path: Path to the git repository.
+
+    Returns:
+        git.Repo object.
+
+    Raises:
+        VersionControlError: No valid git repository at this path.
+    """
+    try:
+        return git.Repo(str(path))
+    except git.exc.InvalidGitRepositoryError:
+        raise VersionControlError(
+            "Could not find a valid git repository at this path. Please perform a `git init` command."
+        )
