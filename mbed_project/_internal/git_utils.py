@@ -93,5 +93,5 @@ def get_repo(path: Path) -> git.Repo:
         return git.Repo(str(path))
     except git.exc.InvalidGitRepositoryError:
         raise VersionControlError(
-            f"Could not find a valid git repository at this path. Please perform a `git init` command."
+            "Could not find a valid git repository at this path. Please perform a `git init` command."
         )
