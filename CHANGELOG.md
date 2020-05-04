@@ -12,6 +12,15 @@ beta releases are not included in this history. For a full list of all releases,
 
 [//]: # (begin_release_notes)
 
+"2.0.1" (2020-05-04)
+====================
+
+Bugfixes
+--------
+
+- Improve error handling. (#20200502)
+
+
 "2.0.0" (2020-04-28)
 ====================
 
