@@ -21,6 +21,7 @@ CHANGELOG_FILE_PATH = "CHANGELOG.md"
 [ProjectConfig.PACKAGES_WITH_CHECKED_LICENCE]
 GitPython="BSD-3-Clause"
 python-dotenv="BSD-3-Clause"
+zipp = "MIT"
 
 [AutoVersionConfig]
 CONFIG_NAME = "DEFAULT"
