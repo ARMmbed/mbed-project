@@ -42,6 +42,7 @@ class MbedProgram:
         """
         self.repo = repo
         self.files = program_files
+        self.root_path = program_files.mbed_file.parent
         self.mbed_os = mbed_os
         self.lib_references = LibraryReferences(root=self.files.mbed_file.parent, ignore_paths=[self.mbed_os.root])
 
